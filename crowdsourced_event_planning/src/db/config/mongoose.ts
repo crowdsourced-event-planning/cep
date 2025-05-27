@@ -16,6 +16,7 @@ export async function dbConnect(): Promise<mongoose.Connection> {
       .connect(MONGODB_URI, {
         dbName: "cep",
         bufferCommands: false,
+        autoIndex: false,
       })
       .then((mongoose) => mongoose.connection);
   }
