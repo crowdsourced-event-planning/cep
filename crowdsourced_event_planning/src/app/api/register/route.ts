@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     } else if (error instanceof CustomError) {
       return NextResponse.json(
         { message: error.message },
-        { status: error.status }
+        { status: error.statusCode }
       );
     } else {
       console.log(error);
