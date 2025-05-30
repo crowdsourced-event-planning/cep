@@ -40,6 +40,22 @@ export default class UserModel {
     return user;
   }
 
+  static async getByEmail(email: string): Promise<IUser | null> {
+    await dbConnect();
+
+    const user = await User.findOne<IUser>({ email }).lean<IUser>();
+
+    return user;
+  }
+
+  static async create(userData: Partial<IUser>): Promise<IUser> {
+    await dbConnect();
+
+    const user = new User(userData);
+    const savedUser = await user.save();
+    return savedUser.toObject();
+  }
+
   static async register(payload: z.infer<typeof userSchema>): Promise<string> {
     await dbConnect();
 
@@ -83,7 +99,6 @@ export default class UserModel {
       new: true,
     }).lean<IUser>();
   }
-
   static async delete(id: string): Promise<string> {
     await dbConnect();
 
@@ -91,5 +106,13 @@ export default class UserModel {
 
     await User.findByIdAndDelete(id);
     return "User deleted";
+  }
+
+  static async deleteMany(
+    filter: Record<string, unknown> = {}
+  ): Promise<boolean> {
+    await dbConnect();
+    const result = await User.deleteMany(filter);
+    return result.acknowledged;
   }
 }

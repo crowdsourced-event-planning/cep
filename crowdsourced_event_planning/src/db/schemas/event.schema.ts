@@ -1,19 +1,24 @@
-import { Schema, Document, ObjectId } from "mongoose";
+import { Schema, Document } from "mongoose";
 
 export interface IEvent extends Document {
+  _id: string;
   title: string;
   description: string;
   location: string;
-  dateEvent: Date;
-  timeEvent: string;
-  type: string; // bisa disesuaikan ke enum
-  status: string; // bisa disesuaikan ke enum
-  visibility: string; // bisa disesuaikan ke enum
+  startDate: Date;
+  endDate: Date;
+  startTime: string;
+  endTime: string;
+  typeEvent: string;
+  status: string;
   targetFunding: number;
   currentFunding: number;
-  creator: ObjectId;
+  creator: string;
+  budget: object[];
+  gallery: string[];
+  documents: string[];
+  cancelReason: string;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export const EventSchema = new Schema<IEvent>(
@@ -21,11 +26,13 @@ export const EventSchema = new Schema<IEvent>(
     title: { type: String, required: true },
     description: { type: String, required: true },
     location: { type: String, required: true },
-    dateEvent: { type: Date, required: true },
-    timeEvent: { type: String, required: true }, // misal: '14:00'
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
 
     // ENUM untuk type event
-    type: {
+    typeEvent: {
       type: String,
       enum: [
         "workshop",
@@ -47,17 +54,13 @@ export const EventSchema = new Schema<IEvent>(
       default: "draft",
     },
 
-    // ENUM untuk visibilitas
-    visibility: {
-      type: String,
-      enum: ["public", "private"],
-      default: "public",
-    },
-
     targetFunding: { type: Number, default: 0 },
     currentFunding: { type: Number, default: 0 },
-
-    creator: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    creator: { type: String, required: true },
+    budget: [{ type: Schema.Types.Mixed }],
+    gallery: [{ type: String }],
+    documents: [{ type: String }],
+    cancelReason: { type: String, default: "" },
   },
   {
     timestamps: true,
