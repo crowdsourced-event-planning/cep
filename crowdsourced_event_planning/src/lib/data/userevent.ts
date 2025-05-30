@@ -1,5 +1,4 @@
-import { UserEventModel } from "@/db/models/UserEventModel";
-import { IUserEvent } from "@/db/schemas/userEvent.schema";
+import { UserEventModel, IUserEvent } from "@/db/models/UserEventModel";
 
 export async function getUserEventsByUserId(
   userId: string

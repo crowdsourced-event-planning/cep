@@ -1,42 +1,79 @@
-import mongoose, { model } from "mongoose";
-import { dbConnect } from "../config/mongoose";
-import { IChat, ChatSchema } from "../schemas/chat.schema";
+import { ObjectId } from "mongodb";
+import { getDb } from "../config/mongodb";
+import {
+  validateObjectId,
+  toObjectId,
+  createObjectId,
+} from "../utils/validateObjectId";
+
+export interface IChat {
+  _id?: ObjectId;
+  eventId?: string;
+  workbookId?: string;
+  taskId?: string;
+  message: string;
+  sender: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export class ChatModel {
-  static async getChatsByEventId(eventId: string): Promise<IChat[]> {
-    await dbConnect();
-    const Chat = mongoose.models.Chat || model<IChat>("Chat", ChatSchema);
+  private static readonly COLLECTION_NAME = "chats";
 
-    return await Chat.find({ eventId }).sort({ createdAt: 1 });
+  static async getChatsByEventId(eventId: string): Promise<IChat[]> {
+    const db = await getDb();
+    const chats = await db
+      .collection<IChat>(this.COLLECTION_NAME)
+      .find({ eventId })
+      .sort({ createdAt: 1 })
+      .toArray();
+    return chats;
   }
 
   static async getChatsByWorkbookId(workbookId: string): Promise<IChat[]> {
-    await dbConnect();
-    const Chat = mongoose.models.Chat || model<IChat>("Chat", ChatSchema);
-
-    return await Chat.find({ workbookId }).sort({ createdAt: 1 });
+    const db = await getDb();
+    const chats = await db
+      .collection<IChat>(this.COLLECTION_NAME)
+      .find({ workbookId })
+      .sort({ createdAt: 1 })
+      .toArray();
+    return chats;
   }
 
   static async getChatsByTaskId(taskId: string): Promise<IChat[]> {
-    await dbConnect();
-    const Chat = mongoose.models.Chat || model<IChat>("Chat", ChatSchema);
-
-    return await Chat.find({ taskId }).sort({ createdAt: 1 });
+    const db = await getDb();
+    const chats = await db
+      .collection<IChat>(this.COLLECTION_NAME)
+      .find({ taskId })
+      .sort({ createdAt: 1 })
+      .toArray();
+    return chats;
   }
 
   static async createMessage(data: Partial<IChat>): Promise<IChat> {
-    await dbConnect();
-    const Chat = mongoose.models.Chat || model<IChat>("Chat", ChatSchema);
-
-    const message = new Chat(data);
-    return await message.save();
+    const db = await getDb();
+    const now = new Date();
+    const messageToInsert: IChat = {
+      _id: createObjectId(),
+      eventId: data.eventId,
+      workbookId: data.workbookId,
+      taskId: data.taskId,
+      message: data.message!,
+      sender: data.sender!,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.collection<IChat>(this.COLLECTION_NAME).insertOne(messageToInsert);
+    return messageToInsert;
   }
 
   static async deleteMessage(messageId: string): Promise<boolean> {
-    await dbConnect();
-    const Chat = mongoose.models.Chat || model<IChat>("Chat", ChatSchema);
+    validateObjectId(messageId, "Message ID");
+    const db = await getDb();
 
-    const result = await Chat.findByIdAndDelete(messageId);
-    return !!result;
+    const result = await db
+      .collection<IChat>(this.COLLECTION_NAME)
+      .deleteOne({ _id: toObjectId(messageId) });
+    return result.deletedCount > 0;
   }
 }

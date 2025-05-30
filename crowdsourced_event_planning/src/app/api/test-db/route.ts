@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/db/config/mongoose";
+import { dbConnect } from "@/db/config/mongodb";
 
 export async function GET() {
   try {
     // Test database connection
-    const connection = await dbConnect();
+    const { client, db } = await dbConnect();
 
     // Check if connection is ready
-    if (connection.readyState !== 1) {
-      throw new Error("Database connection not ready");
-    }
+    const adminDb = client.db().admin();
+    const status = await adminDb.ping();
 
     return NextResponse.json({
       success: true,
       message: "Database connection successful",
       timestamp: new Date().toISOString(),
-      connectionState: connection.readyState,
+      databaseName: db.databaseName,
+      pingResult: status,
     });
   } catch (error) {
     console.error("Database connection error:", error);

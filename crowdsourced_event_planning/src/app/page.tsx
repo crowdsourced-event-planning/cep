@@ -72,8 +72,13 @@ export default async function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {events.map((event) => (
                   <EventCard
-                    key={event._id}
-                    event={event}
+                    key={event._id?.toString() || ""}
+                    event={{
+                      ...event,
+                      _id: event._id?.toString() || "",
+                      createdAt: event.createdAt || new Date(),
+                      updatedAt: event.updatedAt || new Date(),
+                    }}
                     showJoinButton={false}
                   />
                 ))}

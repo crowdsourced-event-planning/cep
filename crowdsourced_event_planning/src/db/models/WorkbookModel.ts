@@ -1,69 +1,103 @@
-import mongoose, { model } from "mongoose";
-import { dbConnect } from "../config/mongoose";
-import { IWorkbook, WorkbookSchema } from "../schemas/workbook.schema";
+import { ObjectId } from "mongodb";
+import { getDb } from "../config/mongodb";
+import {
+  validateObjectId,
+  toObjectId,
+  createObjectId,
+} from "../utils/validateObjectId";
+
+export interface IWorkbook {
+  _id?: ObjectId;
+  name: string;
+  description: string;
+  eventId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export class WorkbookModel {
-  static async getWorkbooksByEventId(eventId: string): Promise<IWorkbook[]> {
-    await dbConnect();
-    const Workbook =
-      mongoose.models.Workbook || model<IWorkbook>("Workbook", WorkbookSchema);
+  private static readonly COLLECTION_NAME = "workbooks";
 
-    return await Workbook.find({ eventId }).sort({ createdAt: -1 });
+  static async getWorkbooksByEventId(eventId: string): Promise<IWorkbook[]> {
+    const db = await getDb();
+    const workbooks = await db
+      .collection<IWorkbook>(this.COLLECTION_NAME)
+      .find({ eventId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return workbooks;
   }
 
   static async getWorkbookById(workbookId: string): Promise<IWorkbook | null> {
-    await dbConnect();
-    const Workbook =
-      mongoose.models.Workbook || model<IWorkbook>("Workbook", WorkbookSchema);
-
-    return await Workbook.findById(workbookId);
+    validateObjectId(workbookId, "Workbook ID");
+    const db = await getDb();
+    const workbook = await db
+      .collection<IWorkbook>(this.COLLECTION_NAME)
+      .findOne({ _id: toObjectId(workbookId) });
+    return workbook;
   }
 
   static async createWorkbook(data: Partial<IWorkbook>): Promise<IWorkbook> {
-    await dbConnect();
-    const Workbook =
-      mongoose.models.Workbook || model<IWorkbook>("Workbook", WorkbookSchema);
-
-    const workbook = new Workbook(data);
-    return await workbook.save();
+    const db = await getDb();
+    const now = new Date();
+    const workbookToInsert: IWorkbook = {
+      _id: createObjectId(),
+      name: data.name!,
+      description: data.description!,
+      eventId: data.eventId!,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db
+      .collection<IWorkbook>(this.COLLECTION_NAME)
+      .insertOne(workbookToInsert);
+    return workbookToInsert;
   }
 
   static async updateWorkbook(
     workbookId: string,
     data: Partial<IWorkbook>
   ): Promise<IWorkbook | null> {
-    await dbConnect();
-    const Workbook =
-      mongoose.models.Workbook || model<IWorkbook>("Workbook", WorkbookSchema);
+    validateObjectId(workbookId, "Workbook ID");
+    const db = await getDb();
 
-    return await Workbook.findByIdAndUpdate(workbookId, data, { new: true });
+    const updateData = {
+      ...data,
+      updatedAt: new Date(),
+    };
+
+    const result = await db
+      .collection<IWorkbook>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: toObjectId(workbookId) },
+        { $set: updateData },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
   }
-  static async deleteWorkbook(workbookId: string): Promise<boolean> {
-    await dbConnect();
-    const Workbook =
-      mongoose.models.Workbook || model<IWorkbook>("Workbook", WorkbookSchema);
 
-    const result = await Workbook.findByIdAndDelete(workbookId);
-    return !!result;
+  static async deleteWorkbook(workbookId: string): Promise<boolean> {
+    validateObjectId(workbookId, "Workbook ID");
+    const db = await getDb();
+
+    const result = await db
+      .collection<IWorkbook>(this.COLLECTION_NAME)
+      .deleteOne({ _id: toObjectId(workbookId) });
+    return result.deletedCount > 0;
   }
 
   static async create(workbookData: Partial<IWorkbook>): Promise<IWorkbook> {
-    await dbConnect();
-    const Workbook =
-      mongoose.models.Workbook || model<IWorkbook>("Workbook", WorkbookSchema);
-
-    const workbook = new Workbook(workbookData);
-    return await workbook.save();
+    return this.createWorkbook(workbookData);
   }
 
   static async deleteMany(
     filter: Record<string, unknown> = {}
   ): Promise<boolean> {
-    await dbConnect();
-    const Workbook =
-      mongoose.models.Workbook || model<IWorkbook>("Workbook", WorkbookSchema);
-
-    const result = await Workbook.deleteMany(filter);
+    const db = await getDb();
+    const result = await db
+      .collection<IWorkbook>(this.COLLECTION_NAME)
+      .deleteMany(filter);
     return result.acknowledged;
   }
 }

@@ -10,7 +10,7 @@ import Button from "@/components/ui/Button";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import TaskManager from "@/components/client/TaskManager";
 import ChatComponent from "@/components/client/ChatComponent";
-import { ITask } from "@/db/schemas/task.schema";
+import { ITask } from "@/db/models/TaskModel";
 
 interface WorkbookPageProps {
   params: Promise<{
@@ -61,12 +61,10 @@ export default async function WorkbookDetailPage({
     ).length;
     const totalTasks = tasks.length;
     const progressPercentage =
-      totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
-    // Transform ITask to Task interface expected by TaskManager
+      totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0; // Transform ITask to Task interface expected by TaskManager
     const transformedTasks = tasks.map((task: ITask) => ({
-      _id: task._id,
-      title: task.name,
+      _id: task._id?.toString() || "",
+      title: task.name || task.title || "",
       description: task.description,
       workbookId: task.workbookId,
       priority: "medium" as const,
@@ -76,11 +74,11 @@ export default async function WorkbookDetailPage({
           : task.status === "done"
           ? ("completed" as const)
           : (task.status as "in_progress"),
-      assignedTo: task.assignedTo.join(", "),
+      assignedTo: (task.assignedTo || []).join(", "),
       dueDate: task.dueDate?.toISOString() || "",
       tags: [],
-      createdAt: task.createdAt.toISOString(),
-      updatedAt: task.createdAt.toISOString(),
+      createdAt: task.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: task.updatedAt?.toISOString() || new Date().toISOString(),
     }));
 
     return (
@@ -112,19 +110,19 @@ export default async function WorkbookDetailPage({
                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                       ACTIVE
                     </span>
-                  </div>
-
+                  </div>{" "}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                     <div>
                       <strong>Created:</strong>{" "}
-                      {formatDateTime(workbook.createdAt)}
+                      {formatDateTime(workbook.createdAt || new Date())}
                     </div>
                     <div>
                       <strong>Updated:</strong>{" "}
-                      {formatDateTime(workbook.createdAt)}
+                      {formatDateTime(
+                        workbook.updatedAt || workbook.createdAt || new Date()
+                      )}
                     </div>
                   </div>
-
                   {workbook.description && (
                     <div>
                       <h3 className="text-lg font-semibold mb-2">
@@ -135,7 +133,6 @@ export default async function WorkbookDetailPage({
                       </p>
                     </div>
                   )}
-
                   {/* Progress Bar */}
                   <div>
                     <div className="flex justify-between items-center mb-2">

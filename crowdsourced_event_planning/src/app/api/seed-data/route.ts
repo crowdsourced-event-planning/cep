@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/db/config/mongoose";
 import EventModel from "@/db/models/EventModel";
 import UserModel from "@/db/models/UserModel";
 import { WorkbookModel } from "@/db/models/WorkbookModel";
 
 export async function POST() {
   try {
-    await dbConnect();
-
     // Create sample user
     const sampleUser = await UserModel.create({
       name: "John Doe",
@@ -26,24 +23,22 @@ export async function POST() {
       targetFunding: 10000,
       currentFunding: 0,
       status: "active",
-      creator: sampleUser._id,
+      creator: sampleUser._id?.toString() || "",
       budget: [],
       gallery: ["https://via.placeholder.com/400x200?text=Tech+Conference"],
       documents: [],
       cancelReason: "",
-    });
-
-    // Create sample workbooks
-    const sampleWorkbook1 = await WorkbookModel.create({
+    }); // Create sample workbooks
+    const sampleWorkbook1 = await WorkbookModel.createWorkbook({
       name: "Event Planning",
       description: "Main workbook for planning the tech conference",
-      eventId: sampleEvent._id,
+      eventId: sampleEvent._id?.toString() || "",
     });
 
-    const sampleWorkbook2 = await WorkbookModel.create({
+    const sampleWorkbook2 = await WorkbookModel.createWorkbook({
       name: "Marketing Materials",
       description: "Workbook for managing marketing and promotional materials",
-      eventId: sampleEvent._id,
+      eventId: sampleEvent._id?.toString() || "",
     });
     return NextResponse.json({
       success: true,
@@ -70,13 +65,11 @@ export async function POST() {
 
 export async function DELETE() {
   try {
-    await dbConnect();
-
     // Clear all sample data
     await Promise.all([
-      EventModel.deleteMany({}),
-      UserModel.deleteMany({}),
-      WorkbookModel.deleteMany({}),
+      EventModel.deleteMany(),
+      UserModel.deleteMany(),
+      WorkbookModel.deleteMany(),
     ]);
 
     return NextResponse.json({

@@ -1,82 +1,152 @@
-import mongoose, { model } from "mongoose";
-import { dbConnect } from "../config/mongoose";
-import { ITask, TaskSchema } from "../schemas/task.schema";
+import { ObjectId } from "mongodb";
+import { getDb } from "../config/mongodb";
+import {
+  validateObjectId,
+  toObjectId,
+  createObjectId,
+} from "../utils/validateObjectId";
+
+export interface ITask {
+  _id?: ObjectId;
+  name: string;
+  title?: string; // Keep both for backward compatibility
+  description: string;
+  workbookId: string;
+  assignedTo?: string[];
+  status: string;
+  priority?: string;
+  dueDate?: Date;
+  parentTask?: string;
+  customColumn?: object[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export class TaskModel {
-  static async getTasksByWorkbookId(workbookId: string): Promise<ITask[]> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
+  private static readonly COLLECTION_NAME = "tasks";
 
-    return await Task.find({ workbookId }).sort({ createdAt: -1 });
+  static async getTasksByWorkbookId(workbookId: string): Promise<ITask[]> {
+    const db = await getDb();
+    const tasks = await db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .find({ workbookId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return tasks;
   }
 
   static async getTaskById(taskId: string): Promise<ITask | null> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
-
-    return await Task.findById(taskId);
+    validateObjectId(taskId, "Task ID");
+    const db = await getDb();
+    const task = await db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .findOne({ _id: toObjectId(taskId) });
+    return task;
   }
 
   static async getSubtasks(parentTaskId: string): Promise<ITask[]> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
-
-    return await Task.find({ parentTask: parentTaskId }).sort({
-      createdAt: -1,
-    });
+    const db = await getDb();
+    const tasks = await db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .find({ parentTask: parentTaskId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return tasks;
   }
-
   static async createTask(data: Partial<ITask>): Promise<ITask> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
-
-    const task = new Task(data);
-    return await task.save();
+    const db = await getDb();
+    const now = new Date();
+    const taskToInsert: ITask = {
+      _id: createObjectId(),
+      name: data.name || data.title!,
+      title: data.title || data.name,
+      description: data.description!,
+      workbookId: data.workbookId!,
+      assignedTo: data.assignedTo || [],
+      status: data.status || "pending",
+      priority: data.priority || "medium",
+      dueDate: data.dueDate,
+      parentTask: data.parentTask,
+      customColumn: data.customColumn || [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.collection<ITask>(this.COLLECTION_NAME).insertOne(taskToInsert);
+    return taskToInsert;
   }
 
   static async updateTask(
     taskId: string,
     data: Partial<ITask>
   ): Promise<ITask | null> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
+    validateObjectId(taskId, "Task ID");
+    const db = await getDb();
 
-    return await Task.findByIdAndUpdate(taskId, data, { new: true });
+    const updateData = {
+      ...data,
+      updatedAt: new Date(),
+    };
+
+    const result = await db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: toObjectId(taskId) },
+        { $set: updateData },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
   }
 
   static async deleteTask(taskId: string): Promise<boolean> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
+    validateObjectId(taskId, "Task ID");
+    const db = await getDb();
 
-    const result = await Task.findByIdAndDelete(taskId);
-    return !!result;
+    const result = await db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .deleteOne({ _id: toObjectId(taskId) });
+    return result.deletedCount > 0;
   }
 
   static async assignUserToTask(
     taskId: string,
     userId: string
   ): Promise<ITask | null> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
+    validateObjectId(taskId, "Task ID");
+    const db = await getDb();
 
-    return await Task.findByIdAndUpdate(
-      taskId,
-      { $addToSet: { assignedTo: userId } },
-      { new: true }
-    );
+    const result = await db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: toObjectId(taskId) },
+        {
+          $addToSet: { assignedTo: userId },
+          $set: { updatedAt: new Date() },
+        },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
   }
 
   static async removeUserFromTask(
     taskId: string,
     userId: string
   ): Promise<ITask | null> {
-    await dbConnect();
-    const Task = mongoose.models.Task || model<ITask>("Task", TaskSchema);
+    validateObjectId(taskId, "Task ID");
+    const db = await getDb();
 
-    return await Task.findByIdAndUpdate(
-      taskId,
-      { $pull: { assignedTo: userId } },
-      { new: true }
-    );
+    const result = await db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: toObjectId(taskId) },
+        {
+          $pull: { assignedTo: userId },
+          $set: { updatedAt: new Date() },
+        },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
   }
 }

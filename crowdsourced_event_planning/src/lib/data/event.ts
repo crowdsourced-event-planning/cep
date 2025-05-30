@@ -1,5 +1,4 @@
-import EventModel from "@/db/models/EventModel";
-import { IEvent } from "@/db/schemas/event.schema";
+import EventModel, { IEvent } from "@/db/models/EventModel";
 
 export async function getAllEvents(): Promise<IEvent[]> {
   return await EventModel.getAll();

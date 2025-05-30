@@ -1,5 +1,4 @@
-import { WorkbookModel } from "@/db/models/WorkbookModel";
-import { IWorkbook } from "@/db/schemas/workbook.schema";
+import { WorkbookModel, IWorkbook } from "@/db/models/WorkbookModel";
 
 export async function getWorkbooksByEventId(
   eventId: string
