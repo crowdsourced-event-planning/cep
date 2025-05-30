@@ -14,7 +14,7 @@ export async function dbConnect(): Promise<mongoose.Connection> {
   if (!cached.promise) {
     cached.promise = mongoose
       .connect(MONGODB_URI, {
-        dbName: "cep",
+        dbName: "collabora",
         bufferCommands: false,
         autoIndex: false,
       })
