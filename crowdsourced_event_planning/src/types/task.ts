@@ -1,10 +1,12 @@
+import { ObjectId } from "mongodb";
+
 export interface Task {
-  _id: string;
+  _id: ObjectId;
   name: string;
   description: string;
-  workbookId: string;
-  parentTask?: string;
-  assignedTo: string[];
+  workbookId: ObjectId;
+  parentTask?: ObjectId;
+  assignedTo: ObjectId[];
   status: string;
   dueDate?: Date;
   createdAt: Date;

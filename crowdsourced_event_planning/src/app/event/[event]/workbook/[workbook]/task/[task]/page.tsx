@@ -21,7 +21,7 @@ export default async function TaskDetail({ params }: TaskPageProps) {
     return <div>Task tidak ditemukan</div>;
   }
 
-  if (task.workbookId !== workbookId) {
+  if (task.workbookId.toString() !== workbookId) {
     return <div>Task tidak sesuai dengan workbook ini</div>;
   }
 
@@ -29,15 +29,13 @@ export default async function TaskDetail({ params }: TaskPageProps) {
   const workbook = await db
     .collection("workbooks")
     .findOne({ _id: new ObjectId(workbookId) });
-  if (!workbook || workbook.eventId !== eventId) {
+  if (!workbook || workbook.eventId.toString() !== eventId) {
     return <div>Workbook tidak sesuai dengan event ini</div>;
   }
 
   const assignees = await db
     .collection("users")
-    .find({
-      _id: { $in: task.assignedTo.map((id: string) => new ObjectId(id)) },
-    })
+    .find({ _id: { $in: task.assignedTo } })
     .toArray();
 
   return (
@@ -56,7 +54,7 @@ export default async function TaskDetail({ params }: TaskPageProps) {
         {assignees.map((user) => user.name).join(", ") || "Tidak ada"}
       </p>
       {task.parentTask && (
-        <p className="mb-2">Subtask dari: {task.parentTask}</p>
+        <p className="mb-2">Subtask dari: {task.parentTask.toString()}</p>
       )}
 
       {task.customColumn && task.customColumn.length > 0 && (

@@ -1,5 +1,7 @@
+import { ObjectId } from "mongodb";
+
 export interface Event {
-  _id: string;
+  _id: ObjectId;
   title: string;
   description: string;
   location: string;

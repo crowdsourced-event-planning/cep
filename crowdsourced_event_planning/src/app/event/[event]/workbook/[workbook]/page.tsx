@@ -20,7 +20,7 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
     return <div>Workbook tidak ditemukan</div>;
   }
 
-  if (workbook.eventId !== eventId) {
+  if (workbook.eventId.toString() !== eventId) {
     return <div>Workbook tidak sesuai dengan event ini</div>;
   }
 
@@ -38,9 +38,9 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
       {tasks.length > 0 ? (
         <ul className="list-disc pl-5">
           {tasks.map((task) => (
-            <li key={task._id}>
+            <li key={task._id.toString()}>
               <Link
-                href={`/event/${eventId}/workbook/${workbookId}/task/${task._id}`}
+                href={`/event/${eventId}/workbook/${workbookId}/task/${task._id.toString()}`}
                 className="text-blue-600 hover:underline"
               >
                 {task.name} {task.parentTask ? "(Subtask)" : ""}

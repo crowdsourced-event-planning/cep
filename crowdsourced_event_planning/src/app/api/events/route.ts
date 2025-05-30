@@ -1,29 +1,28 @@
-import { getDb } from "@/lib/mongodb";
-import { Filter, ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
+import { getEventById } from "@/lib/data/event";
+import { getDb } from "@/lib/mongodb";
 import { Event } from "@/types/event";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("id");
-  const db = await getDb();
 
   try {
     if (eventId) {
-      const query: Filter<Event> = {
-        _id: new ObjectId(eventId) as unknown as string,
-      };
-      const event = await db.collection<Event>("events").findOne(query);
+      const event = await getEventById(eventId);
       if (!event) {
         return NextResponse.json(
           { error: "Event tidak ditemukan" },
           { status: 404 }
         );
       }
-      return NextResponse.json(event);
+      return NextResponse.json({ ...event, _id: event._id.toString() });
     } else {
+      const db = await getDb();
       const events = await db.collection<Event>("events").find().toArray();
-      return NextResponse.json(events);
+      return NextResponse.json(
+        events.map((event) => ({ ...event, _id: event._id.toString() }))
+      );
     }
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -35,6 +34,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const userId = request.headers.get("x-user-id");
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Autentikasi diperlukan" },
+      { status: 401 }
+    );
+  }
+
   const data = await request.json();
   const {
     title,

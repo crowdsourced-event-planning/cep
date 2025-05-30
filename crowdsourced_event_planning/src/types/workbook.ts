@@ -1,7 +1,8 @@
+import { ObjectId } from "mongodb";
 export interface Workbook {
-  _id: string;
+  _id: ObjectId;
   name: string;
   description: string;
-  eventId: string;
+  eventId: ObjectId;
   createdAt: Date;
 }

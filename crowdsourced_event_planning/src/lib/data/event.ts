@@ -1,15 +1,14 @@
 import { getDb } from "@/lib/mongodb";
-import { Filter, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { Event } from "@/types/event";
 import { Workbook } from "@/types/workbook";
 
 export async function getEventById(eventId: string): Promise<Event | null> {
   const db = await getDb();
   try {
-    const query: Filter<Event> = {
-      _id: new ObjectId(eventId) as unknown as string,
-    };
-    return await db.collection<Event>("events").findOne(query);
+    return await db
+      .collection<Event>("events")
+      .findOne({ _id: new ObjectId(eventId) });
   } catch (error) {
     console.error("Error fetching event:", error);
     return null;
@@ -23,7 +22,7 @@ export async function getWorkbooksByEvent(
   try {
     return await db
       .collection<Workbook>("workbooks")
-      .find({ eventId })
+      .find({ eventId: new ObjectId(eventId) })
       .toArray();
   } catch (error) {
     console.error("Error fetching workbooks:", error);

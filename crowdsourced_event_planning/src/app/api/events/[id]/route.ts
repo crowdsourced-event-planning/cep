@@ -1,26 +1,29 @@
 import { getDb } from "@/lib/mongodb";
-import { Filter, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { Event } from "@/types/event";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+
   const db = await getDb();
 
   try {
-    const query: Filter<Event> = {
-      _id: new ObjectId(params.id) as unknown as string,
-    };
-    const event = await db.collection<Event>("events").findOne(query);
+    const event = await db
+      .collection<Event>("events")
+      .findOne({ _id: new ObjectId(id) });
     if (!event) {
       return NextResponse.json(
         { error: "Event tidak ditemukan" },
         { status: 404 }
       );
     }
-    return NextResponse.json(event);
+    // Konversi _id ke string untuk response
+    return NextResponse.json({ ...event, _id: event._id.toString() });
   } catch (error) {
     console.error("Error fetching event:", error);
     return NextResponse.json(
@@ -32,8 +35,11 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+
   const data = await request.json();
   const {
     title,
@@ -69,13 +75,9 @@ export async function PUT(
   };
 
   try {
-    const query: Filter<Event> = {
-      _id: new ObjectId(params.id) as unknown as string,
-    };
     const result = await db
       .collection<Event>("events")
-      .updateOne(query, { $set: updateData });
-
+      .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
     if (result.matchedCount === 0) {
       return NextResponse.json(
         { error: "Event tidak ditemukan" },
