@@ -138,7 +138,7 @@ export default async function EventDetail({ params }: EventPageProps) {
 
       <div className="flex justify-end gap-4">
         <Button asChild>
-          <Link href={`/event/${event._id}/donation?slug=${event._id}}`}>
+          <Link href={`/event/${event._id}/donation?slug=${event._id}`}>
             Donasi
           </Link>
         </Button>
