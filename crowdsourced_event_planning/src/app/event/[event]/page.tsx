@@ -136,7 +136,12 @@ export default async function EventDetail({ params }: EventPageProps) {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-4">
+        <Button asChild>
+          <Link href={`/event/${event._id}/donation?slug=${event._id}}`}>
+            Donasi
+          </Link>
+        </Button>
         <Button asChild>
           <Link href={`/event/${event._id}/workbook/new`}>
             Tambah Workbook Baru
