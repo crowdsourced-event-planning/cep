@@ -189,7 +189,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       </div>
                     ) : (
                       <WorkbookList
-                        workbooks={workbooks}
+                        workbooks={workbooks.map((workbook) => ({
+                          ...workbook,
+                          _id: workbook._id?.toString() || "",
+                          createdAt: workbook.createdAt || new Date(),
+                          updatedAt: workbook.updatedAt || new Date(),
+                        }))}
                         onSelectWorkbook={(workbookId) => {
                           window.location.href = `/event/${eventParam}/workbook/${workbookId}`;
                         }}

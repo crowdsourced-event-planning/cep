@@ -1,11 +1,30 @@
-import mongoose, { model } from "mongoose";
+import { ObjectId } from "mongodb";
 import { hashPassword, comparePassword } from "@/lib/bcrypt";
 import CustomError from "@/db/exceptions/CustomError";
 import { signToken } from "@/lib/jwt";
 import { z } from "zod";
-import { dbConnect } from "../config/mongoose";
-import { IUser, UserSchema } from "../schemas/user.schema";
-import { validateObjectId } from "../utils/validateObjectId";
+import { getDb } from "../config/mongodb";
+import {
+  validateObjectId,
+  toObjectId,
+  createObjectId,
+} from "../utils/validateObjectId";
+
+export interface IUser {
+  _id?: ObjectId;
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+  badge?: string;
+  balance?: number;
+  totalRating?: number;
+  totalUserRating?: number;
+  createdEvents?: string[];
+  joinedEvents?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 const userSchema = z.object({
   name: z.string().min(3),
@@ -27,63 +46,90 @@ interface ILoginResponse {
   access_token: string;
 }
 
-const User = mongoose.models.User || model<IUser>("User", UserSchema);
-
 export default class UserModel {
+  private static readonly COLLECTION_NAME = "users";
+
   static async getById(id: string): Promise<IUser | null> {
-    await dbConnect();
-
     validateObjectId(id, "User ID");
-
-    const user = await User.findById<IUser>(id).lean<IUser>();
-
+    const db = await getDb();
+    const user = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOne({ _id: toObjectId(id) });
     return user;
   }
 
   static async getByEmail(email: string): Promise<IUser | null> {
-    await dbConnect();
-
-    const user = await User.findOne<IUser>({ email }).lean<IUser>();
-
+    const db = await getDb();
+    const user = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOne({ email });
     return user;
   }
-
   static async create(userData: Partial<IUser>): Promise<IUser> {
-    await dbConnect();
-
-    const user = new User(userData);
-    const savedUser = await user.save();
-    return savedUser.toObject();
+    const db = await getDb();
+    const now = new Date();
+    const userToInsert: IUser = {
+      _id: createObjectId(),
+      name: userData.name!,
+      email: userData.email!,
+      password: userData.password!,
+      role: userData.role || "user",
+      badge: userData.badge || "",
+      balance: userData.balance || 0,
+      totalRating: userData.totalRating || 0,
+      totalUserRating: userData.totalUserRating || 0,
+      createdEvents: userData.createdEvents || [],
+      joinedEvents: userData.joinedEvents || [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.collection<IUser>(this.COLLECTION_NAME).insertOne(userToInsert);
+    return userToInsert;
   }
 
   static async register(payload: z.infer<typeof userSchema>): Promise<string> {
-    await dbConnect();
-
     userSchema.parse(payload);
-    const isExist = await User.findOne({ email: payload.email });
+    const db = await getDb();
+
+    const isExist = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOne({ email: payload.email });
     if (isExist) throw new CustomError("Email already registered", 400);
-
-    const user = new User({
-      ...payload,
+    const now = new Date();
+    const user: IUser = {
+      _id: createObjectId(),
+      name: payload.name,
+      email: payload.email,
       password: await hashPassword(payload.password),
-    });
+      role: "user",
+      badge: "",
+      balance: 0,
+      totalRating: 0,
+      totalUserRating: 0,
+      createdEvents: [],
+      joinedEvents: [],
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    await user.save();
+    await db.collection<IUser>(this.COLLECTION_NAME).insertOne(user);
     return "Registration successful";
   }
 
   static async login(payload: ILoginInput): Promise<ILoginResponse> {
-    await dbConnect();
-
     loginSchema.parse(payload);
-    const user = await User.findOne({ email: payload.email });
+    const db = await getDb();
+
+    const user = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOne({ email: payload.email });
     if (!user) throw new CustomError("Invalid email/password", 401);
 
     const isValid = await comparePassword(payload.password, user.password);
     if (!isValid) throw new CustomError("Invalid email/password", 401);
 
     const token = await signToken({
-      _id: user._id.toString(),
+      _id: user._id!.toString(),
       name: user.name,
     });
 
@@ -91,28 +137,42 @@ export default class UserModel {
   }
 
   static async update(id: string, data: Partial<IUser>): Promise<IUser | null> {
-    await dbConnect();
-
     validateObjectId(id, "User ID");
+    const db = await getDb();
 
-    return await User.findByIdAndUpdate<IUser>(id, data, {
-      new: true,
-    }).lean<IUser>();
+    const updateData = {
+      ...data,
+      updatedAt: new Date(),
+    };
+
+    const result = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: toObjectId(id) },
+        { $set: updateData },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
   }
+
   static async delete(id: string): Promise<string> {
-    await dbConnect();
-
     validateObjectId(id, "User ID");
+    const db = await getDb();
 
-    await User.findByIdAndDelete(id);
+    await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .deleteOne({ _id: toObjectId(id) });
     return "User deleted";
   }
 
   static async deleteMany(
     filter: Record<string, unknown> = {}
   ): Promise<boolean> {
-    await dbConnect();
-    const result = await User.deleteMany(filter);
+    const db = await getDb();
+    const result = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .deleteMany(filter);
     return result.acknowledged;
   }
 }

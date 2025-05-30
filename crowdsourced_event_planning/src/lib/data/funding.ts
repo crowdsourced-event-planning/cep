@@ -1,5 +1,4 @@
-import { FundingModel } from "@/db/models/FundingModel";
-import { IFunding } from "@/db/schemas/funding.schema";
+import { FundingModel, IFunding } from "@/db/models/FundingModel";
 
 export async function getFundingsByEventId(
   eventId: string

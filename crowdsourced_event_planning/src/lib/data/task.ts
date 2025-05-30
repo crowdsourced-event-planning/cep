@@ -1,5 +1,4 @@
-import { TaskModel } from "@/db/models/TaskModel";
-import { ITask } from "@/db/schemas/task.schema";
+import { TaskModel, ITask } from "@/db/models/TaskModel";
 
 export async function getTasksByWorkbookId(
   workbookId: string

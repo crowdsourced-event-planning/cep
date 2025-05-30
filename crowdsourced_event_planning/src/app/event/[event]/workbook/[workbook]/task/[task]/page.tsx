@@ -146,11 +146,11 @@ export default async function TaskDetailPage({ params }: TaskPageProps) {
                         Update Status
                       </Button>
                     </div>
-                  </div>
-
+                  </div>{" "}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                     <div>
-                      <strong>Created:</strong> {formatDateTime(task.createdAt)}
+                      <strong>Created:</strong>{" "}
+                      {formatDateTime(task.createdAt || new Date())}
                     </div>
                     <div>
                       <strong>Due Date:</strong>{" "}
@@ -158,7 +158,7 @@ export default async function TaskDetailPage({ params }: TaskPageProps) {
                     </div>
                     <div>
                       <strong>Assignees:</strong>{" "}
-                      {task.assignedTo.length > 0
+                      {task.assignedTo && task.assignedTo.length > 0
                         ? task.assignedTo.join(", ")
                         : "Not assigned"}
                     </div>
@@ -195,10 +195,11 @@ export default async function TaskDetailPage({ params }: TaskPageProps) {
                         </span>
                       </div>
                       <div className="flex-1">
+                        {" "}
                         <div className="flex items-center space-x-2">
                           <span className="font-medium">System</span>
                           <span className="text-gray-500 text-sm">
-                            {formatDateTime(task.createdAt)}
+                            {formatDateTime(task.createdAt || new Date())}
                           </span>
                         </div>
                         <p className="text-gray-700 text-sm">
@@ -279,9 +280,9 @@ export default async function TaskDetailPage({ params }: TaskPageProps) {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Assignees
-                      </label>
+                      </label>{" "}
                       <div className="text-sm text-gray-600">
-                        {task.assignedTo.length > 0
+                        {task.assignedTo && task.assignedTo.length > 0
                           ? task.assignedTo.join(", ")
                           : "Not assigned"}
                       </div>

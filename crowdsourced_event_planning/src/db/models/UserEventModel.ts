@@ -1,24 +1,41 @@
-import mongoose, { model } from "mongoose";
-import { dbConnect } from "../config/mongoose";
-import { IUserEvent, UserEventSchema } from "../schemas/userEvent.schema";
+import { ObjectId } from "mongodb";
+import { getDb } from "../config/mongodb";
+import { validateObjectId, createObjectId } from "../utils/validateObjectId";
+
+export interface IUserEvent {
+  _id?: ObjectId;
+  userId: string;
+  eventId: string;
+  role: string;
+  status: string;
+  joinedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export class UserEventModel {
-  static async getUserEventsByUserId(userId: string): Promise<IUserEvent[]> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
+  private static readonly COLLECTION_NAME = "userevents";
 
-    return await UserEvent.find({ userId }).sort({ createdAt: -1 });
+  static async getUserEventsByUserId(userId: string): Promise<IUserEvent[]> {
+    validateObjectId(userId, "User ID");
+    const db = await getDb();
+    const userEvents = await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return userEvents;
   }
 
   static async getUserEventsByEventId(eventId: string): Promise<IUserEvent[]> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
-
-    return await UserEvent.find({ eventId }).sort({ createdAt: -1 });
+    validateObjectId(eventId, "Event ID");
+    const db = await getDb();
+    const userEvents = await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .find({ eventId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return userEvents;
   }
 
   static async joinEvent(
@@ -26,18 +43,26 @@ export class UserEventModel {
     eventId: string,
     role: string = "viewer"
   ): Promise<IUserEvent> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
+    validateObjectId(userId, "User ID");
+    validateObjectId(eventId, "Event ID");
+    const db = await getDb();
 
-    const userEvent = new UserEvent({
+    const now = new Date();
+    const userEventToInsert: IUserEvent = {
+      _id: createObjectId(),
       userId,
       eventId,
       role,
       status: "pending",
-    });
-    return await userEvent.save();
+      joinedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .insertOne(userEventToInsert);
+    return userEventToInsert;
   }
 
   static async updateUserEventStatus(
@@ -45,94 +70,84 @@ export class UserEventModel {
     eventId: string,
     status: string
   ): Promise<IUserEvent | null> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
+    validateObjectId(userId, "User ID");
+    validateObjectId(eventId, "Event ID");
+    const db = await getDb();
 
-    return await UserEvent.findOneAndUpdate(
-      { userId, eventId },
-      { status },
-      { new: true }
-    );
+    const result = await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { userId, eventId },
+        {
+          $set: {
+            status,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
   }
 
   static async isUserJoinedEvent(
     userId: string,
     eventId: string
   ): Promise<boolean> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
+    validateObjectId(userId, "User ID");
+    validateObjectId(eventId, "Event ID");
+    const db = await getDb();
 
-    const userEvent = await UserEvent.findOne({ userId, eventId });
+    const userEvent = await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .findOne({ userId, eventId });
     return !!userEvent;
   }
+
   static async getUserRoleInEvent(
     userId: string,
     eventId: string
   ): Promise<string | null> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
+    validateObjectId(userId, "User ID");
+    validateObjectId(eventId, "Event ID");
+    const db = await getDb();
 
-    const userEvent = await UserEvent.findOne({ userId, eventId });
+    const userEvent = await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .findOne({ userId, eventId });
     return userEvent ? userEvent.role : null;
   }
 
   static async leaveEvent(userId: string, eventId: string): Promise<string> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
-
-    const validateObjectId = (id: string, name: string) => {
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new Error(`Invalid ${name}: ${id}`);
-      }
-    };
-
     validateObjectId(userId, "User ID");
     validateObjectId(eventId, "Event ID");
+    const db = await getDb();
 
-    await UserEvent.findOneAndDelete<IUserEvent>({ userId, eventId });
+    await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .deleteOne({ userId, eventId });
     return "UserEvent deleted";
   }
+
   static async isJoined(userId: string, eventId: string): Promise<boolean> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
-
-    const validateObjectId = (id: string, name: string) => {
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new Error(`Invalid ${name}: ${id}`);
-      }
-    };
-
     validateObjectId(userId, "User ID");
     validateObjectId(eventId, "Event ID");
+    const db = await getDb();
 
-    const isJoined = await UserEvent.findOne<IUserEvent>({
-      userId,
-      eventId,
-    });
-
+    const isJoined = await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .findOne({ userId, eventId });
     return !!isJoined;
   }
 
   static async getParticipant(eventId: string): Promise<IUserEvent[] | null> {
-    await dbConnect();
-    const UserEvent =
-      mongoose.models.UserEvent ||
-      model<IUserEvent>("UserEvent", UserEventSchema);
+    validateObjectId(eventId, "Event ID");
+    const db = await getDb();
 
-    if (!mongoose.Types.ObjectId.isValid(eventId)) return null;
-
-    const participants = await UserEvent.find({ eventId }).populate("userId");
-
+    const participants = await db
+      .collection<IUserEvent>(this.COLLECTION_NAME)
+      .find({ eventId })
+      .toArray();
     return participants;
   }
 }

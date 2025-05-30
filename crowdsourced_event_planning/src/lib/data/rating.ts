@@ -1,5 +1,4 @@
-import { RatingModel } from "@/db/models/RatingModel";
-import { IRating } from "@/db/schemas/rating.schema";
+import { RatingModel, IRating } from "@/db/models/RatingModel";
 
 export async function getRatingsByEventId(eventId: string): Promise<IRating[]> {
   return await RatingModel.getRatingsByEventId(eventId);

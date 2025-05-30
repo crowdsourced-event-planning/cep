@@ -1,34 +1,54 @@
-import mongoose, { model } from "mongoose";
-import { dbConnect } from "../config/mongoose";
-import { IRating, RatingSchema } from "../schemas/rating.schema";
+import { ObjectId } from "mongodb";
+import { getDb } from "../config/mongodb";
+import { createObjectId } from "../utils/validateObjectId";
+
+export interface IRating {
+  _id?: ObjectId;
+  eventId: string;
+  userId: string;
+  score: number;
+  comment: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export class RatingModel {
   static async getRatingsByEventId(eventId: string): Promise<IRating[]> {
-    await dbConnect();
-    const Rating =
-      mongoose.models.Rating || model<IRating>("Rating", RatingSchema);
+    const db = await getDb();
+    const collection = db.collection<IRating>("ratings");
 
-    return await Rating.find({ eventId }).sort({ createdAt: -1 });
+    return await collection.find({ eventId }).sort({ createdAt: -1 }).toArray();
   }
 
   static async createRating(data: Partial<IRating>): Promise<IRating> {
-    await dbConnect();
-    const Rating =
-      mongoose.models.Rating || model<IRating>("Rating", RatingSchema);
+    const db = await getDb();
+    const collection = db.collection<IRating>("ratings");
 
-    const rating = new Rating(data);
-    return await rating.save();
+    const now = new Date();
+    const ratingData: IRating = {
+      _id: createObjectId(),
+      eventId: data.eventId!,
+      userId: data.userId!,
+      score: data.score!,
+      comment: data.comment!,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await collection.insertOne(ratingData);
+    return { ...ratingData, _id: result.insertedId };
   }
 
   static async getAverageRatingByEventId(eventId: string): Promise<number> {
-    await dbConnect();
-    const Rating =
-      mongoose.models.Rating || model<IRating>("Rating", RatingSchema);
+    const db = await getDb();
+    const collection = db.collection<IRating>("ratings");
 
-    const result = await Rating.aggregate([
-      { $match: { eventId } },
-      { $group: { _id: null, average: { $avg: "$score" } } },
-    ]);
+    const result = await collection
+      .aggregate([
+        { $match: { eventId } },
+        { $group: { _id: null, average: { $avg: "$score" } } },
+      ])
+      .toArray();
 
     return result.length > 0 ? Number(result[0].average.toFixed(1)) : 0;
   }
@@ -37,11 +57,10 @@ export class RatingModel {
     userId: string,
     eventId: string
   ): Promise<boolean> {
-    await dbConnect();
-    const Rating =
-      mongoose.models.Rating || model<IRating>("Rating", RatingSchema);
+    const db = await getDb();
+    const collection = db.collection<IRating>("ratings");
 
-    const rating = await Rating.findOne({ userId, eventId });
+    const rating = await collection.findOne({ userId, eventId });
     return !!rating;
   }
 }

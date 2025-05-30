@@ -1,11 +1,12 @@
-import mongoose from "mongoose";
+import { MongoClient, Db } from "mongodb";
 
 declare global {
   // eslint-disable-next-line no-var
-  var mongoose:
+  var mongodb:
     | {
-        conn: mongoose.Connection | null;
-        promise: Promise<mongoose.Connection> | null;
+        client: MongoClient | null;
+        db: Db | null;
+        promise: Promise<{ client: MongoClient; db: Db }> | null;
       }
     | undefined;
 }

@@ -17,6 +17,7 @@ export interface Event {
   documents: string[];
   cancelReason: string;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface EventCard {

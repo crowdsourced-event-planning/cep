@@ -1,5 +1,4 @@
-import UserModel from "@/db/models/UserModel";
-import { IUser } from "@/db/schemas/user.schema";
+import UserModel, { IUser } from "@/db/models/UserModel";
 
 export async function getUserById(userId: string): Promise<IUser | null> {
   return await UserModel.getById(userId);
@@ -38,6 +37,6 @@ export async function updateUserBalance(
   const user = await UserModel.getById(userId);
   if (!user) return null;
 
-  const newBalance = user.balance + amount;
+  const newBalance = (user.balance || 0) + amount;
   return await UserModel.update(userId, { balance: newBalance });
 }

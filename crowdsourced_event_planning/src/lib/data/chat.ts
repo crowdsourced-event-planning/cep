@@ -1,5 +1,4 @@
-import { ChatModel } from "@/db/models/ChatModel";
-import { IChat } from "@/db/schemas/chat.schema";
+import { ChatModel, IChat } from "@/db/models/ChatModel";
 
 export async function getChatsByEventId(eventId: string): Promise<IChat[]> {
   return await ChatModel.getChatsByEventId(eventId);
