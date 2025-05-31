@@ -9,8 +9,8 @@ import {
   getAverageRatingByEventId,
 } from "@/lib/data/rating";
 import WorkbookList from "@/components/WorkbookList";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import Card from "@/components/ui/card";
+import Button from "@/components/ui/button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
