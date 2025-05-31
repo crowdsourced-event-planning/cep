@@ -1,8 +1,8 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Card from "./ui/Card";
-import Button from "./ui/Button";
+import { Card } from "./ui/card";
+import { Button } from "./ui/button";
 import { formatDate, formatCurrency } from "@/lib/utils/formatDate";
 import { Event } from "../../types/event";
 
@@ -100,7 +100,7 @@ export default function EventCard({
         {/* Action Buttons */}
         <div className="flex space-x-2">
           <Link href={`/event/${event._id}`} className="flex-1">
-            <Button variant="primary" className="w-full">
+            <Button variant="default" className="w-full">
               View Details
             </Button>
           </Link>
@@ -108,7 +108,7 @@ export default function EventCard({
           {showJoinButton && event.status === "open" && (
             <Button
               onClick={() => onJoinEvent?.(event._id)}
-              variant={isJoined ? "secondary" : "success"}
+              variant={isJoined ? "secondary" : "default"}
               disabled={isJoined}
             >
               {isJoined ? "Joined" : "Join Event"}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/formatDate";
 
 interface Funding {
