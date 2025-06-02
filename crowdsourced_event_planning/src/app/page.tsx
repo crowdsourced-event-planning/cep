@@ -32,6 +32,13 @@ async function getRandomEventImage() {
   return "/default-hero.jpg"; // fallback jika gagal
 }
 
+export function isAuthenticated(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    !!localStorage.getItem("token") || document.cookie.includes("access_token=")
+  );
+}
+
 export default async function HomePage() {
   const events = await getAllEvents();
   const heroImage = await getRandomEventImage();
@@ -136,8 +143,8 @@ export default async function HomePage() {
               </div>
               <h3 className="text-xl font-semibold mb-3">Support</h3>
               <p className="text-gray-600">
-                Back your favorite projects and help bring them to life with your
-                support.
+                Back your favorite projects and help bring them to life with
+                your support.
               </p>
             </div>
             <div className="text-center">

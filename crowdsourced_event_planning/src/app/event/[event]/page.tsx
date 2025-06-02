@@ -8,12 +8,13 @@ import {
   getRatingsByEventId,
   getAverageRatingByEventId,
 } from "@/lib/data/rating";
-import WorkbookList from "@/components/WorkbookList";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
+import ButtonCreateWorkbook from "@/components/client/ButtonCreateWorkbook";
+import ClientWorkbookListWrapper from "@/components/client/ClientWorkbookListWrapper";
 
 interface EventPageProps {
   params: Promise<{
@@ -177,7 +178,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       <h2 className="text-2xl font-bold text-gray-900">
                         Workbooks
                       </h2>
-                      <Button size="sm">Create Workbook</Button>
+                      {/* Tampilkan tombol hanya jika ada workbook */}
+                      {workbooks.length > 0 && (
+                        <ButtonCreateWorkbook eventId={eventParam} />
+                      )}
                     </div>
 
                     {workbooks.length === 0 ? (
@@ -185,19 +189,23 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                         <p className="text-gray-500">
                           No workbooks created yet.
                         </p>
-                        <Button className="mt-4">Create First Workbook</Button>
+                        {/* Tampilkan tombol "Create First Workbook" atau "Silakan Login" */}
+                        <ButtonCreateWorkbook
+                          eventId={eventParam}
+                          mode="first"
+                        />
                       </div>
                     ) : (
-                      <WorkbookList
+                      <ClientWorkbookListWrapper
                         workbooks={workbooks.map((workbook) => ({
                           ...workbook,
                           _id: workbook._id?.toString() || "",
                           createdAt: workbook.createdAt || new Date(),
                           updatedAt: workbook.updatedAt || new Date(),
+                          eventId: workbook.eventId?.toString() || "",
+                          createdBy: workbook.createdBy?.toString() || "",
                         }))}
-                        onSelectWorkbook={(workbookId) => {
-                          window.location.href = `/event/${eventParam}/workbook/${workbookId}`;
-                        }}
+                        eventId={eventParam}
                       />
                     )}
                   </div>

@@ -34,28 +34,20 @@ export default function Login() {
         cache: "no-store",
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("userId", data.user._id); // Simpan _id user ke localStorage
+        document.cookie = `access_token=${data.access_token}; path=/; max-age=86400`;
+        window.dispatchEvent(new Event("authChanged"));
+        router.push("/");
+      } else {
+        const data = await res.json();
         Swal.fire({
           icon: "error",
           title: "Login Failed!",
           text: data.message,
           confirmButtonColor: "#3b82f6",
         });
-      } else {
-        await Swal.fire({
-          icon: "success",
-          title: "Login Success!",
-          text: "Redirecting to dashboard...",
-          showConfirmButton: false,
-          timer: 1500,
-        });
-
-        // Set cookie and redirect
-        document.cookie = `access_token=${data.access_token}; path=/; max-age=86400`; // 1 day
-
-        router.push("/");
       }
     } catch {
       Swal.fire({

@@ -10,7 +10,8 @@ export interface IWorkbook {
   _id?: ObjectId;
   name: string;
   description: string;
-  eventId: string;
+  eventId: ObjectId; // Pastikan eventId adalah ObjectId
+  createdBy: ObjectId; // Tambahkan createdBy sebagai ObjectId
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -22,7 +23,7 @@ export class WorkbookModel {
     const db = await getDb();
     const workbooks = await db
       .collection<IWorkbook>(this.COLLECTION_NAME)
-      .find({ eventId })
+      .find({ eventId: toObjectId(eventId) })
       .sort({ createdAt: -1 })
       .toArray();
     return workbooks;
@@ -40,17 +41,28 @@ export class WorkbookModel {
   static async createWorkbook(data: Partial<IWorkbook>): Promise<IWorkbook> {
     const db = await getDb();
     const now = new Date();
+
+    // Konversi eventId dan createdBy ke ObjectId
     const workbookToInsert: IWorkbook = {
       _id: createObjectId(),
       name: data.name!,
       description: data.description!,
-      eventId: data.eventId!,
+      eventId:
+        typeof data.eventId === "string"
+          ? toObjectId(data.eventId)
+          : data.eventId!, // Konversi eventId ke ObjectId jika perlu
+      createdBy:
+        typeof data.createdBy === "string"
+          ? toObjectId(data.createdBy)
+          : data.createdBy!, // Konversi createdBy ke ObjectId jika perlu
       createdAt: now,
       updatedAt: now,
     };
+
     await db
       .collection<IWorkbook>(this.COLLECTION_NAME)
       .insertOne(workbookToInsert);
+
     return workbookToInsert;
   }
 
