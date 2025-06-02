@@ -1,6 +1,7 @@
 export interface Event {
   _id: string;
   title: string;
+  slug: string;
   description: string;
   location: string;
   startDate: Date;
@@ -11,7 +12,7 @@ export interface Event {
   status: string;
   targetFunding: number;
   currentFunding: number;
-  creator: string;
+  createdBy: string;
   budget: object[];
   gallery: string[];
   documents: string[];

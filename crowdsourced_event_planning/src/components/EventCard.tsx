@@ -27,7 +27,7 @@ export default function EventCard({
       : 0;
 
   return (
-    <Link href={`/event/${event._id}`} className="block group">
+    <Link href={`/event/${event.slug}`} className="block group">
       <Card className="transition-shadow duration-200 hover:shadow-lg p-4">
         <div className="space-y-4">
           {/* Event Image */}

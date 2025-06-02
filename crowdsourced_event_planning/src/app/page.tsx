@@ -123,6 +123,7 @@ export default async function HomePage() {
                     _id: event._id?.toString() || "",
                     createdAt: event.createdAt || new Date(),
                     updatedAt: event.updatedAt || new Date(),
+                    createdBy: event.createdBy || "",
                   }}
                   showJoinButton={true}
                 />

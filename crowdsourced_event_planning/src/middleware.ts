@@ -1,32 +1,54 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Daftar path yang wajib login
-const protectedPaths = ["/transaksi", "/chat", "/komentar"];
+// Daftar path yang memerlukan role creator
+const creatorPaths = [
+  "/event/create",
+  "/api/events/create",
+  "/api/events/[id]/update",
+  "/api/events/[id]/delete",
+  "/api/workbooks/create",
+  "/event/[slug]/workbook/[workbook]/task/new",
+];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("access_token")?.value;
   const userId = request.cookies.get("x-user-id")?.value;
+  const role = request.cookies.get("user-role")?.value;
 
   // Cek jika path butuh login
-  if (protectedPaths.some((path) => pathname.startsWith(path))) {
+  const needsAuth = creatorPaths.some(
+    (path) =>
+      pathname.includes(path) ||
+      pathname.startsWith("/api/workbooks") ||
+      pathname.includes("/edit")
+  );
+
+  if (needsAuth) {
     if (!token || !userId) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Cek role untuk path yang membutuhkan role creator
+    if (
+      creatorPaths.some((path) => pathname.includes(path)) &&
+      role !== "creator"
+    ) {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
   }
 
   return NextResponse.next();
 }
 
-// Aktifkan middleware hanya untuk path tertentu
 export const config = {
   matcher: [
-    "/transaksi/:path*",
-    "/chat/:path*",
-    "/komentar/:path*",
-    "/api/workbooks",
+    "/event/create/:path*",
+    "/api/events/:path*",
+    "/api/workbooks/:path*",
+    "/event/:path*/workbook/:path*/task/:path*",
   ],
 };

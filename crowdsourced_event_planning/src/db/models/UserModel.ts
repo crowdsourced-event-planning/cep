@@ -15,7 +15,7 @@ export interface IUser {
   name: string;
   email: string;
   password: string;
-  role?: string;
+  role: "creator" | "viewer";
   badge?: string;
   balance?: number;
   totalRating?: number;
@@ -68,7 +68,7 @@ export default class UserModel {
       name: userData.name!,
       email: userData.email!,
       password: userData.password!,
-      role: userData.role || "user",
+      role: userData.role || "viewer", // Ubah dari "user" ke "viewer"
       badge: userData.badge || "",
       balance: userData.balance || 0,
       totalRating: userData.totalRating || 0,
@@ -96,7 +96,7 @@ export default class UserModel {
       name: payload.name,
       email: payload.email,
       password: await hashPassword(payload.password),
-      role: "user",
+      role: "viewer", // Ubah dari "user" ke "viewer"
       badge: "",
       balance: 0,
       totalRating: 0,
@@ -128,10 +128,11 @@ export default class UserModel {
     const isValid = await comparePassword(payload.password, user.password);
     if (!isValid) throw new CustomError("Invalid email/password", 401);
 
-    // Buat token JWT
+    // Buat token JWT dengan tambahan role
     const token = await signToken({
       _id: user._id!.toString(),
       name: user.name,
+      role: user.role, // Tambahkan role ke token
     });
 
     // Kembalikan user dan token
@@ -193,5 +194,41 @@ export default class UserModel {
       .collection<IUser>(this.COLLECTION_NAME)
       .deleteMany(filter);
     return result.acknowledged;
+  }
+
+  // Tambahkan method ini di class UserModel
+  static async updateRole(
+    userId: string,
+    newRole: "creator" | "viewer"
+  ): Promise<IUser | null> {
+    validateObjectId(userId, "User ID");
+    const db = await getDb();
+
+    const result = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: toObjectId(userId) },
+        {
+          $set: {
+            role: newRole,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
+  }
+
+  // Tambahkan method ini di class UserModel
+  static async getUserRole(userId: string): Promise<string | null> {
+    validateObjectId(userId, "User ID");
+    const db = await getDb();
+
+    const user = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOne({ _id: toObjectId(userId) }, { projection: { role: 1 } });
+
+    return user ? user.role : null;
   }
 }
