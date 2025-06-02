@@ -1,10 +1,12 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
 import { validateObjectId, toObjectId } from "../utils/validateObjectId";
+import { generateUniqueSlug, isValidObjectId } from "../../lib/utils/slug";
 
 export interface IEvent {
   _id?: ObjectId;
   title: string;
+  slug: string;
   description: string;
   location: string;
   startDate: Date;
@@ -44,10 +46,16 @@ export default class EventModel {
       .toArray();
     return events;
   }
-
   static async create(data: Partial<IEvent>): Promise<IEvent> {
     const db = await getDb();
     const now = new Date();
+
+    // Generate unique slug if not provided
+    if (!data.slug && data.title) {
+      const existingSlugs = await this.getAllSlugs();
+      data.slug = generateUniqueSlug(data.title, existingSlugs);
+    }
+
     const eventData = {
       ...data,
       createdAt: now,
@@ -111,7 +119,6 @@ export default class EventModel {
 
     return "Event deleted";
   }
-
   static async deleteMany(
     filter: Record<string, unknown> = {}
   ): Promise<boolean> {
@@ -120,5 +127,42 @@ export default class EventModel {
       .collection<IEvent>(this.COLLECTION_NAME)
       .deleteMany(filter);
     return result.acknowledged;
+  }
+
+  // Slug-related methods
+  static async getBySlug(slug: string): Promise<IEvent | null> {
+    const db = await getDb();
+    const event = await db
+      .collection<IEvent>(this.COLLECTION_NAME)
+      .findOne({ slug });
+    return event;
+  }
+
+  static async getBySlugOrId(slugOrId: string): Promise<IEvent | null> {
+    // If it looks like an ObjectId, try to get by ID first
+    if (isValidObjectId(slugOrId)) {
+      const event = await this.getById(slugOrId);
+      if (event) return event;
+    }
+
+    // Try to get by slug
+    return await this.getBySlug(slugOrId);
+  }
+
+  static async getAllSlugs(): Promise<string[]> {
+    const db = await getDb();
+    const events = await db
+      .collection<IEvent>(this.COLLECTION_NAME)
+      .find({}, { projection: { slug: 1 } })
+      .toArray();
+    return events.map((event) => event.slug).filter(Boolean);
+  }
+
+  static async isSlugExists(slug: string): Promise<boolean> {
+    const db = await getDb();
+    const count = await db
+      .collection<IEvent>(this.COLLECTION_NAME)
+      .countDocuments({ slug });
+    return count > 0;
   }
 }

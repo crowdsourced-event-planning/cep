@@ -8,6 +8,16 @@ export async function getEventById(eventId: string): Promise<IEvent | null> {
   return await EventModel.getById(eventId);
 }
 
+export async function getEventBySlug(slug: string): Promise<IEvent | null> {
+  return await EventModel.getBySlug(slug);
+}
+
+export async function getEventBySlugOrId(
+  slugOrId: string
+): Promise<IEvent | null> {
+  return await EventModel.getBySlugOrId(slugOrId);
+}
+
 export async function getEventsByUserId(userId: string): Promise<IEvent[]> {
   return await EventModel.getEventsByCreator(userId);
 }

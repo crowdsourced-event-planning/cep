@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getEventById } from "@/lib/data/event";
+import { getEventBySlugOrId } from "@/lib/data/event";
 import { getWorkbooksByEventId } from "@/lib/data/workbook";
 import {
   getRatingsByEventId,
@@ -26,7 +26,7 @@ export async function generateMetadata({
   params,
 }: EventPageProps): Promise<Metadata> {
   const { event: eventParam } = await params;
-  const event = await getEventById(eventParam);
+  const event = await getEventBySlugOrId(eventParam);
 
   if (!event) {
     return {
@@ -49,17 +49,18 @@ export async function generateMetadata({
 
 export default async function EventDetailPage({ params }: EventPageProps) {
   const { event: eventParam } = await params;
-
   try {
-    const [event, workbooks, ratings, averageRating] = await Promise.all([
-      getEventById(eventParam),
-      getWorkbooksByEventId(eventParam),
-      getRatingsByEventId(eventParam),
-      getAverageRatingByEventId(eventParam),
-    ]);
+    const event = await getEventBySlugOrId(eventParam);
     if (!event) {
       notFound();
     }
+
+    const eventId = event._id?.toString() || "";
+    const [workbooks, ratings, averageRating] = await Promise.all([
+      getWorkbooksByEventId(eventId),
+      getRatingsByEventId(eventId),
+      getAverageRatingByEventId(eventId),
+    ]);
 
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -178,8 +179,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl font-bold text-gray-900">
                         Workbooks
-                      </h2>
-                      <CreateWorkbookButton eventId={eventParam} size="sm">
+                      </h2>{" "}
+                      <CreateWorkbookButton eventId={eventId} size="sm">
                         Create Workbook
                       </CreateWorkbookButton>
                     </div>
@@ -187,9 +188,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       <div className="text-center py-8">
                         <p className="text-gray-500">
                           No workbooks created yet.
-                        </p>
+                        </p>{" "}
                         <CreateWorkbookButton
-                          eventId={eventParam}
+                          eventId={eventId}
                           className="mt-4"
                         >
                           Create First Workbook
@@ -219,17 +220,15 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 {/* Event Actions */}
                 <Card>
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold">Actions</h3>
+                    <h3 className="text-lg font-semibold">Actions</h3>{" "}
                     <JoinEventButtonWrapper
                       eventId={eventParam}
                       eventStatus={event.status}
                       className="w-full"
                     />
-
                     <Button variant="secondary" className="w-full">
                       Share Event
                     </Button>
-
                     <Button variant="secondary" className="w-full">
                       Follow Updates
                     </Button>

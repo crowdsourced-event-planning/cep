@@ -96,15 +96,15 @@ export default function EventCard({
         </div>{" "}
         {/* Action Buttons */}
         <div className="flex space-x-2">
-          <Link href={`/event/${event._id}`} className="flex-1">
+          {" "}
+          <Link href={`/event/${event.slug}`} className="flex-1">
             <Button variant="success" className="w-full">
               View Details
             </Button>
-          </Link>
-
+          </Link>{" "}
           {showJoinButton && event.status === "open" && (
             <JoinEventButtonWrapper
-              eventId={event._id}
+              eventId={event.slug}
               eventStatus={event.status}
             />
           )}
