@@ -81,11 +81,18 @@ export async function POST(request: Request) {
   console.log(`Workbook ditemukan: ${JSON.stringify(workbook)}`);
   console.log(`Mencoba mencari event dengan eventId: ${workbook.eventId}`);
 
-  const event = await db
-    .collection("events")
-    .findOne({ _id: workbook.eventId });
+  // Convert workbook.eventId to ObjectId if it's a string
+  const eventId =
+    typeof workbook.eventId === "string"
+      ? new ObjectId(workbook.eventId)
+      : workbook.eventId;
+
+  console.log(`Looking for event with ID: ${eventId}`);
+
+  const event = await db.collection("events").findOne({ _id: eventId });
+
   if (!event) {
-    console.log(`Event tidak ditemukan untuk eventId: ${workbook.eventId}`);
+    console.log(`Event tidak ditemukan untuk eventId: ${eventId}`);
     return NextResponse.json(
       { error: "Event tidak ditemukan untuk workbook ini" },
       { status: 404 }
@@ -125,6 +132,9 @@ export async function POST(request: Request) {
     const result = await db
       .collection<Task>("tasks")
       .insertOne(newTask as Task);
+    console.log(
+      `Task created successfully with ID: ${result.insertedId.toString()}`
+    );
     return NextResponse.json(
       { id: result.insertedId.toString() },
       { status: 201 }
@@ -173,9 +183,14 @@ export async function PUT(request: Request) {
     );
   }
 
-  const event = await db
-    .collection("events")
-    .findOne({ _id: workbook.eventId });
+  // Convert workbook.eventId to ObjectId if it's a string
+  const eventId =
+    typeof workbook.eventId === "string"
+      ? new ObjectId(workbook.eventId)
+      : workbook.eventId;
+
+  const event = await db.collection("events").findOne({ _id: eventId });
+
   if (!event) {
     return NextResponse.json(
       { error: "Event tidak ditemukan untuk workbook ini" },

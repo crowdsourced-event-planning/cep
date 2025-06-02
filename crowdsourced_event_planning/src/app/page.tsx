@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Image from "next/image";
 import { getAllEvents } from "@/lib/data/event";
 import EventCard from "@/components/EventCard";
 
@@ -63,11 +64,13 @@ export default async function HomePage() {
                 Explore Projects
               </a>
             </div>
-          </div>
+          </div>{" "}
           <div className="md:w-1/2 flex justify-center">
-            <img
+            <Image
               src={heroImage}
               alt="Event Crowd"
+              width={400}
+              height={300}
               className="w-full max-w-md rounded-xl shadow-lg"
             />
           </div>

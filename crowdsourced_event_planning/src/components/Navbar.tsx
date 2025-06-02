@@ -7,12 +7,15 @@ import { useState, useEffect } from "react";
 function isAuthenticated() {
   if (typeof window === "undefined") return false;
   // Cek token di localStorage atau cookie
-  return !!localStorage.getItem("token") || document.cookie.includes("access_token=");
+  return (
+    !!localStorage.getItem("token") || document.cookie.includes("access_token=")
+  );
 }
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/events", label: "Events" },
+  { href: "/create", label: "Create Event" },
   { href: "/about", label: "About" },
 ];
 
@@ -29,7 +32,8 @@ export default function Navbar() {
   // Logout handler
   const handleLogout = () => {
     localStorage.removeItem("token");
-    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    document.cookie =
+      "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
     setLoggedIn(false);
     router.push("/login");
   };
@@ -87,8 +91,18 @@ export default function Navbar() {
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
       </div>

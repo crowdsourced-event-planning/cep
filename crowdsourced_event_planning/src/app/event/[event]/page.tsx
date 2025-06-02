@@ -8,12 +8,13 @@ import {
   getRatingsByEventId,
   getAverageRatingByEventId,
 } from "@/lib/data/rating";
-import WorkbookList from "@/components/WorkbookList";
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
+import CreateWorkbookButton from "@/components/client/CreateWorkbookButton";
+import WorkbookListClient from "@/components/client/WorkbookListClient";
 
 interface EventPageProps {
   params: Promise<{
@@ -173,31 +174,36 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 {/* Workbooks */}
                 <Card>
                   <div className="space-y-4">
+                    {" "}
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl font-bold text-gray-900">
                         Workbooks
                       </h2>
-                      <Button size="sm">Create Workbook</Button>
+                      <CreateWorkbookButton eventId={eventParam} size="sm">
+                        Create Workbook
+                      </CreateWorkbookButton>
                     </div>
-
                     {workbooks.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-gray-500">
                           No workbooks created yet.
                         </p>
-                        <Button className="mt-4">Create First Workbook</Button>
+                        <CreateWorkbookButton
+                          eventId={eventParam}
+                          className="mt-4"
+                        >
+                          Create First Workbook
+                        </CreateWorkbookButton>
                       </div>
                     ) : (
-                      <WorkbookList
+                      <WorkbookListClient
+                        eventId={eventParam}
                         workbooks={workbooks.map((workbook) => ({
                           ...workbook,
                           _id: workbook._id?.toString() || "",
                           createdAt: workbook.createdAt || new Date(),
                           updatedAt: workbook.updatedAt || new Date(),
                         }))}
-                        onSelectWorkbook={(workbookId) => {
-                          window.location.href = `/event/${eventParam}/workbook/${workbookId}`;
-                        }}
                       />
                     )}
                   </div>

@@ -3,21 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 import Card from "./ui/card";
 import Button from "./ui/button";
+import JoinEventButtonWrapper from "./client/JoinEventButtonWrapper";
 import { formatDate, formatCurrency } from "@/lib/utils/formatDate";
 import { Event } from "../../types/event";
 
 interface EventCardProps {
   event: Event;
   showJoinButton?: boolean;
-  onJoinEvent?: (eventId: string) => void;
-  isJoined?: boolean;
 }
 
 export default function EventCard({
   event,
   showJoinButton = true,
-  onJoinEvent,
-  isJoined = false,
 }: EventCardProps) {
   const fundingPercentage =
     event.targetFunding > 0
@@ -106,13 +103,10 @@ export default function EventCard({
           </Link>
 
           {showJoinButton && event.status === "open" && (
-            <Button
-              onClick={() => onJoinEvent?.(event._id)}
-              variant={isJoined ? "secondary" : "success"}
-              disabled={isJoined}
-            >
-              {isJoined ? "Joined" : "Join Event"}
-            </Button>
+            <JoinEventButtonWrapper
+              eventId={event._id}
+              eventStatus={event.status}
+            />
           )}
         </div>
       </div>

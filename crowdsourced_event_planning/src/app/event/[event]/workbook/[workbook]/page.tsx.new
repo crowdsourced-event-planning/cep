@@ -1,5 +1,7 @@
 import { getWorkbookById } from "@/lib/data/workbook";
+import Link from "next/link";
 import TaskForm from "@/components/client/TaskForm";
+import { Suspense } from "react";
 import AutoRefreshTaskList from "@/components/client/AutoRefreshTaskList";
 
 interface WorkbookPageProps {
@@ -34,7 +36,9 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
       </p>
 
       <h2 className="text-2xl font-bold mt-6 mb-4">Tasks</h2>
-      <AutoRefreshTaskList workbookId={workbookId} eventId={eventId} />
+      <Suspense fallback={<div>Loading tasks...</div>}>
+        <AutoRefreshTaskList workbookId={workbookId} eventId={eventId} />
+      </Suspense>
 
       <h2 className="text-2xl font-bold mt-6 mb-4">Tambah Task Baru</h2>
       <TaskForm workbookId={workbookId} />

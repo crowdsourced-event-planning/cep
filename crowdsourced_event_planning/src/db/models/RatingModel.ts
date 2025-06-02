@@ -13,16 +13,18 @@ export interface IRating {
 }
 
 export class RatingModel {
+  private static readonly COLLECTION_NAME = "ratings";
+
   static async getRatingsByEventId(eventId: string): Promise<IRating[]> {
     const db = await getDb();
-    const collection = db.collection<IRating>("ratings");
+    const collection = db.collection<IRating>(this.COLLECTION_NAME);
 
     return await collection.find({ eventId }).sort({ createdAt: -1 }).toArray();
   }
 
   static async createRating(data: Partial<IRating>): Promise<IRating> {
     const db = await getDb();
-    const collection = db.collection<IRating>("ratings");
+    const collection = db.collection<IRating>(this.COLLECTION_NAME);
 
     const now = new Date();
     const ratingData: IRating = {
@@ -38,10 +40,9 @@ export class RatingModel {
     const result = await collection.insertOne(ratingData);
     return { ...ratingData, _id: result.insertedId };
   }
-
   static async getAverageRatingByEventId(eventId: string): Promise<number> {
     const db = await getDb();
-    const collection = db.collection<IRating>("ratings");
+    const collection = db.collection<IRating>(this.COLLECTION_NAME);
 
     const result = await collection
       .aggregate([
@@ -52,13 +53,12 @@ export class RatingModel {
 
     return result.length > 0 ? Number(result[0].average.toFixed(1)) : 0;
   }
-
   static async hasUserRatedEvent(
     userId: string,
     eventId: string
   ): Promise<boolean> {
     const db = await getDb();
-    const collection = db.collection<IRating>("ratings");
+    const collection = db.collection<IRating>(this.COLLECTION_NAME);
 
     const rating = await collection.findOne({ userId, eventId });
     return !!rating;
