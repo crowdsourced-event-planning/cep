@@ -15,6 +15,7 @@ import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
 import ButtonCreateWorkbook from "@/components/client/ButtonCreateWorkbook";
 import ClientWorkbookListWrapper from "@/components/client/ClientWorkbookListWrapper";
+import { isAuthenticated } from "@/lib/auth-client"; // Import fungsi isAuthenticated
 
 interface EventPageProps {
   params: Promise<{
@@ -61,12 +62,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       notFound();
     }
 
+    const loggedIn = isAuthenticated(); // Periksa status login
+
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="container mx-auto px-4">
           {/* Event Header */}
           <div className="mb-8">
-            {" "}
             <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
               <Link href="/" className="hover:text-blue-600">
                 Home
@@ -170,50 +172,50 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       </div>
                     )}
                   </div>
-                </Card>{" "}
+                </Card>
                 {/* Workbooks */}
-                <Card>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        Workbooks
-                      </h2>
-                      {/* Tampilkan tombol hanya jika ada workbook */}
-                      {workbooks.length > 0 && (
-                        <ButtonCreateWorkbook eventId={eventParam} />
+                {loggedIn && ( // Hanya tampilkan jika pengguna login
+                  <Card>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          Workbooks
+                        </h2>
+                        {workbooks.length > 0 && (
+                          <ButtonCreateWorkbook eventId={eventParam} />
+                        )}
+                      </div>
+
+                      {workbooks.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">
+                            No workbooks created yet.
+                          </p>
+                          <ButtonCreateWorkbook
+                            eventId={eventParam}
+                            mode="first"
+                          />
+                        </div>
+                      ) : (
+                        <ClientWorkbookListWrapper
+                          workbooks={workbooks.map((workbook) => ({
+                            ...workbook,
+                            _id: workbook._id?.toString() || "",
+                            createdAt: workbook.createdAt || new Date(),
+                            updatedAt: workbook.updatedAt || new Date(),
+                            eventId: workbook.eventId?.toString() || "",
+                            createdBy: workbook.createdBy?.toString() || "",
+                          }))}
+                          eventId={eventParam}
+                        />
                       )}
                     </div>
-
-                    {workbooks.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">
-                          No workbooks created yet.
-                        </p>
-                        {/* Tampilkan tombol "Create First Workbook" atau "Silakan Login" */}
-                        <ButtonCreateWorkbook
-                          eventId={eventParam}
-                          mode="first"
-                        />
-                      </div>
-                    ) : (
-                      <ClientWorkbookListWrapper
-                        workbooks={workbooks.map((workbook) => ({
-                          ...workbook,
-                          _id: workbook._id?.toString() || "",
-                          createdAt: workbook.createdAt || new Date(),
-                          updatedAt: workbook.updatedAt || new Date(),
-                          eventId: workbook.eventId?.toString() || "",
-                          createdBy: workbook.createdBy?.toString() || "",
-                        }))}
-                        eventId={eventParam}
-                      />
-                    )}
-                  </div>
-                </Card>
-              </div>{" "}
+                  </Card>
+                )}
+              </div>
               {/* Sidebar */}
               <div className="space-y-6">
-                {/* Funding Progress */}{" "}
+                {/* Funding Progress */}
                 <FundingTracker
                   eventId={eventParam}
                   targetAmount={event.targetFunding}
@@ -221,22 +223,21 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 {/* Event Actions */}
                 <Card>
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold">Actions</h3>
+                    {/* <h3 className="text-lg font-semibold">Actions</h3> */}
                     <JoinEventButtonWrapper
                       eventId={eventParam}
                       eventStatus={event.status}
                       className="w-full"
                     />
-
                     <Button variant="secondary" className="w-full">
                       Share Event
                     </Button>
-
-                    <Button variant="secondary" className="w-full">
+                    {/* <Button variant="secondary" className="w-full">
                       Follow Updates
-                    </Button>
+                    </Button> */}
                   </div>
                 </Card>
+
                 {/* Event Chat */}
                 <Card>
                   <div className="space-y-4">

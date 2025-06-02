@@ -36,9 +36,9 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    logout(); // Hapus token dari cookie
-    setLoggedIn(false);
-    router.push("/login");
+    logout(); // Hapus semua cookie autentikasi
+    setLoggedIn(false); // Perbarui state loggedIn
+    router.push("/login"); // Arahkan ke halaman login
 
     // Trigger event authChanged
     window.dispatchEvent(new Event("authChanged"));
@@ -50,11 +50,11 @@ export default function Navbar() {
         {/* Logo dan Teks */}
         <Link href="/" className="flex items-center space-x-2">
           <Image
-            src="/logo.webp" // Path ke logo di folder public
+            src="/logo.webp"
             alt="Collabora Logo"
-            width={40} // Lebar logo
-            height={40} // Tinggi logo
-            className="rounded-full" // Opsional: Tambahkan styling
+            width={40}
+            height={40}
+            className="rounded-full"
           />
           <span className="text-2xl font-bold text-blue-600">Collabora</span>
         </Link>

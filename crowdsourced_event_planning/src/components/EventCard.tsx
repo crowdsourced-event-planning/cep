@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,7 +28,7 @@ export default function EventCard({
 
   return (
     <Link href={`/event/${event._id}`} className="block group">
-      <Card className="transition-shadow duration-200 hover:shadow-lg">
+      <Card className="transition-shadow duration-200 hover:shadow-lg p-4">
         <div className="space-y-4">
           {/* Event Image */}
           {event.gallery && event.gallery.length > 0 ? (
@@ -88,13 +90,14 @@ export default function EventCard({
                 ></div>
               </div>
 
-              <div className="flex flex-wrap justify-between items-center text-sm gap-1">
-                <span className="text-gray-600 break-all">
+              {/* Funding Info */}
+              <div className="space-y-1 text-sm">
+                <div className="text-gray-600">
                   {`${formatCurrency(event.currentFunding)} raised`}
-                </span>
-                <span className="text-gray-600 break-all">
+                </div>
+                <div className="text-gray-600">
                   {`of ${formatCurrency(event.targetFunding)}`}
-                </span>
+                </div>
               </div>
             </div>
           </div>
@@ -106,7 +109,7 @@ export default function EventCard({
                 onClick={() => onJoinEvent?.(event._id)}
                 variant={isJoined ? "secondary" : "success"}
                 disabled={isJoined}
-                className="w-full"
+                className="w-full text-sm py-2"
               >
                 {isJoined ? "Joined" : "Join Event"}
               </Button>

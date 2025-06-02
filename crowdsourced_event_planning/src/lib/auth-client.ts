@@ -57,13 +57,21 @@ export function isAuthenticated(): boolean {
 }
 
 /**
- * Remove authentication token (logout)
+ * Remove authentication token and related cookies (logout)
  */
 export function logout(): void {
   if (typeof window === "undefined") return;
 
+  // Hapus cookie access_token
   document.cookie =
     "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+
+  // Hapus cookie x-user-id
+  document.cookie = "x-user-id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+
+  // Tambahkan cookie lain yang perlu dihapus jika ada
+  document.cookie =
+    "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
 }
 
 /**
