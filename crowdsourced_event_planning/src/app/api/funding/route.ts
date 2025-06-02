@@ -4,6 +4,7 @@ import {
   getFundingsByEventId,
   getTotalFundingByEventId,
 } from "@/lib/data/funding";
+import { updateEventFunding } from "@/lib/data/event";
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,17 +53,22 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
     const fundingData = {
       amount: Number(amount),
       userId,
       eventId,
       message: message || "",
       isAnonymous: Boolean(isAnonymous),
-      status: "pending",
+      status: "completed", // Set status to completed instead of pending
       createdAt: new Date(),
     };
 
     const newFunding = await createFunding(fundingData);
+
+    // Update the event's currentFunding field
+    await updateEventFunding(eventId, Number(amount));
+
     return NextResponse.json(newFunding, { status: 201 });
   } catch (error) {
     console.error("Error creating funding:", error);

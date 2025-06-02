@@ -212,10 +212,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </div>{" "}
               {/* Sidebar */}
               <div className="space-y-6">
+                {" "}
                 {/* Funding Progress */}{" "}
                 <FundingTracker
                   eventId={eventParam}
                   targetAmount={event.targetFunding}
+                  currentFunding={event.currentFunding}
                 />
                 {/* Event Actions */}
                 <Card>

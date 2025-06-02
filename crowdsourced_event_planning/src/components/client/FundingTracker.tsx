@@ -18,22 +18,33 @@ interface Funding {
 interface FundingTrackerProps {
   eventId: string;
   targetAmount: number;
+  currentFunding: number;
   currentUserId?: string;
+  onFundingUpdate?: (newAmount: number) => void; // Add callback for funding updates
 }
 
 export default function FundingTracker({
   eventId,
   targetAmount,
+  currentFunding,
   currentUserId,
+  onFundingUpdate,
 }: FundingTrackerProps) {
   const [funding, setFunding] = useState<Funding[]>([]);
-  const [totalFunding, setTotalFunding] = useState(0);
   const [showFundingModal, setShowFundingModal] = useState(false);
   const [fundingAmount, setFundingAmount] = useState("");
   const [fundingMessage, setFundingMessage] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [localCurrentFunding, setLocalCurrentFunding] =
+    useState(currentFunding);
+
+  // Update local funding when prop changes
+  useEffect(() => {
+    setLocalCurrentFunding(currentFunding);
+  }, [currentFunding]);
+
   const fetchFunding = useCallback(async () => {
     try {
       const response = await fetch(`/api/funding?eventId=${eventId}`);
@@ -46,24 +57,9 @@ export default function FundingTracker({
     }
   }, [eventId]);
 
-  const fetchTotalFunding = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `/api/funding?eventId=${eventId}&total=true`
-      );
-      if (!response.ok) throw new Error("Failed to fetch total funding");
-
-      const data = await response.json();
-      setTotalFunding(data.total);
-    } catch (err) {
-      console.error("Error fetching total funding:", err);
-    }
-  }, [eventId]);
-
   useEffect(() => {
     fetchFunding();
-    fetchTotalFunding();
-  }, [fetchFunding, fetchTotalFunding]);
+  }, [fetchFunding]);
 
   const handleFunding = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +98,15 @@ export default function FundingTracker({
 
       const newFunding = await response.json();
       setFunding((prev) => [...prev, newFunding]);
-      setTotalFunding((prev) => prev + newFunding.amount);
+
+      // Update local funding amount immediately
+      const newTotal = localCurrentFunding + Number(fundingAmount);
+      setLocalCurrentFunding(newTotal);
+
+      // Notify parent component of the update
+      if (onFundingUpdate) {
+        onFundingUpdate(newTotal);
+      }
 
       // Reset form
       setFundingAmount("");
@@ -110,7 +114,7 @@ export default function FundingTracker({
       setIsAnonymous(false);
       setShowFundingModal(false);
 
-      // Show success message (you could replace this with a toast notification)
+      // Show success message
       alert("Thank you for your contribution!");
     } catch (err) {
       console.error("Error submitting funding:", err);
@@ -121,7 +125,9 @@ export default function FundingTracker({
   };
 
   const fundingPercentage =
-    targetAmount > 0 ? Math.min((totalFunding / targetAmount) * 100, 100) : 0;
+    targetAmount > 0
+      ? Math.min((localCurrentFunding / targetAmount) * 100, 100)
+      : 0;
   const recentFunding = funding
     .filter((f) => f.status === "completed")
     .slice(-5);
@@ -144,7 +150,7 @@ export default function FundingTracker({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalFunding)}
+              {formatCurrency(localCurrentFunding)}
             </span>
             <span className="text-sm text-gray-500">
               {fundingPercentage.toFixed(1)}%
@@ -165,7 +171,7 @@ export default function FundingTracker({
           </div>
 
           <div className="flex justify-between text-sm text-gray-600">
-            <span>Raised: {formatCurrency(totalFunding)}</span>
+            <span>Raised: {formatCurrency(localCurrentFunding)}</span>
             <span>Goal: {formatCurrency(targetAmount)}</span>
           </div>
         </div>
