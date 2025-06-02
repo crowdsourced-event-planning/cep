@@ -18,8 +18,6 @@ import FundingTracker from "@/components/client/FundingTracker";
 import WorkbookList from "@/components/WorkbookList";
 import TaskList from "@/components/TaskList";
 import { toPlain } from "@/db/utils/toPlain";
-import { Workbook } from "../../../../types/workbook";
-import { Task } from "../../../../types/task";
 
 interface EventPageProps {
   params: { slug: string };
@@ -28,7 +26,8 @@ interface EventPageProps {
 export async function generateMetadata(
   props: EventPageProps
 ): Promise<Metadata> {
-  const event = await getEventBySlug(props.params.slug);
+  const { slug } = await props.params;
+  const event = await getEventBySlug(slug);
 
   if (!event) {
     return {
@@ -51,11 +50,20 @@ export async function generateMetadata(
 
 export default async function EventDetailPage(props: EventPageProps) {
   const { slug } = await props.params;
-  const event = await getEventBySlug(slug);
+  const eventRaw = await getEventBySlug(slug);
 
-  if (!event) {
+  if (!eventRaw) {
     notFound();
   }
+
+  // Konversi event dan data lain ke plain object
+  const event = toPlain(eventRaw) as import("../../../../types/event").Event;
+  const workbooks = toPlain(
+    await getWorkbooksByEventId(event._id || "")
+  ) as import("../../../../types/workbook").Workbook[];
+  const tasks = toPlain(
+    await getTasksByWorkbookId(event._id || "")
+  ) as import("../../../../types/task").Task[];
 
   const userId = (await cookies()).get("x-user-id")?.value || "";
   const isCreator = event.createdBy?.toString() === userId?.toString();
@@ -64,11 +72,6 @@ export default async function EventDetailPage(props: EventPageProps) {
     getRatingsByEventId(event._id?.toString() || ""),
     getAverageRatingByEventId(event._id?.toString() || ""),
   ]);
-
-  const workbooksRaw = await getWorkbooksByEventId(event._id?.toString() || "");
-  const tasksRaw = await getTasksByWorkbookId(event._id?.toString() || "");
-  const workbooks = toPlain(workbooksRaw);
-  const tasks = toPlain(tasksRaw);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -186,11 +189,11 @@ export default async function EventDetailPage(props: EventPageProps) {
                         <Button>+ Create Workbook</Button>
                       </Link>
                     </div>
-                    <WorkbookList workbooks={workbooks as Workbook[]} />
+                    <WorkbookList workbooks={workbooks} />
                   </section>
                   <section>
                     <h2 className="font-bold text-lg mb-2">Task</h2>
-                    <TaskList tasks={tasks as Task[]} />
+                    <TaskList tasks={tasks} />
                   </section>
                 </>
               )}
@@ -199,7 +202,7 @@ export default async function EventDetailPage(props: EventPageProps) {
             <div className="space-y-6">
               {/* Funding Progress */}
               <FundingTracker
-                eventId={event._id?.toString() || ""}
+                eventId={event._id}
                 targetAmount={event.targetFunding}
               />
               {/* Event Actions */}

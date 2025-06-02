@@ -3,19 +3,15 @@ export type PlainObject = { [key: string]: unknown };
 export function toPlain(obj: unknown): unknown {
   if (Array.isArray(obj)) return obj.map(toPlain);
   if (obj && typeof obj === "object") {
+    if (
+      (obj as { _bsontype?: string; toString?: () => string })._bsontype ===
+        "ObjectId" &&
+      (obj as { toString?: () => string }).toString
+    )
+      return (obj as { toString: () => string }).toString();
     const result: PlainObject = {};
-    // Type guard to ensure obj is Record<string, unknown>
-    const plainObj = obj as Record<string, unknown>;
-    for (const key in plainObj) {
-      if (
-        plainObj[key] &&
-        typeof plainObj[key] === "object" &&
-        (plainObj[key] as { _bsontype?: string })._bsontype === "ObjectId"
-      ) {
-        result[key] = (plainObj[key] as { toString: () => string }).toString();
-      } else {
-        result[key] = toPlain(plainObj[key]);
-      }
+    for (const key in obj as Record<string, unknown>) {
+      result[key] = toPlain((obj as Record<string, unknown>)[key]);
     }
     return result;
   }
