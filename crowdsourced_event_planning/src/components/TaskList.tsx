@@ -1,5 +1,5 @@
 import React from "react";
-import Card from "./ui/card";
+import Card from "./ui/Card";
 import { Task } from "../../types/task";
 import { formatDate } from "@/lib/utils/formatDate";
 
