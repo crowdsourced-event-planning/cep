@@ -4,7 +4,7 @@ import React, { useState } from "react";
 // import Swal from 'sweetalert2'; // Unused import removed
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import doLogin from "./action";
+// import doLogin from "./action";
 import Swal from "sweetalert2";
 
 export interface IInputLogin {
@@ -26,24 +26,50 @@ export default function Login() {
     console.log("Form submitted with input:", input);
 
     try {
-      const result = await doLogin(input);
+      // const result = await doLogin(input);
 
-      if (result && !result.success) {
+      // if (result && !result.success) {
+      //   Swal.fire({
+      //     icon: "error",
+      //     title: "Login Failed!",
+      //     text: result.message,
+      //     confirmButtonColor: "#3b82f6",
+      //   });
+      // } else if (result && result.success) {
+      //   await Swal.fire({
+      //     icon: "success",
+      //     title: "Login Success!",
+      //     text: "Redirecting to dashboard...",
+      //     showConfirmButton: false,
+      //   });
+
+      //   router.push("/");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/login`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(input),
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        document.cookie = `x-user-id=${data.user._id}; path=/; max-age=86400`;
+        document.cookie = `access_token=${data.access_token}; path=/; max-age=86400`;
+
+        // Trigger event authChanged
+        window.dispatchEvent(new Event("authChanged"));
+
+        router.push("/");
+      } else {
+        const data = await res.json();
         Swal.fire({
           icon: "error",
           title: "Login Failed!",
-          text: result.message,
+          text: data.message || "An unknown error occurred.",
           confirmButtonColor: "#3b82f6",
         });
-      } else if (result && result.success) {
-        await Swal.fire({
-          icon: "success",
-          title: "Login Success!",
-          text: "Redirecting to dashboard...",
-          showConfirmButton: false,
-        });
-
-        router.push("/");
       }
     } catch (err) {
       console.log(err);

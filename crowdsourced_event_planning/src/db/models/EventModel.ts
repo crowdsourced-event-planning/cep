@@ -5,6 +5,7 @@ import { validateObjectId, toObjectId } from "../utils/validateObjectId";
 export interface IEvent {
   _id?: ObjectId;
   title: string;
+  slug: string;
   description: string;
   location: string;
   startDate: Date;
@@ -15,7 +16,8 @@ export interface IEvent {
   status: string;
   targetFunding: number;
   currentFunding: number;
-  creator: string;
+  createdBy: string;
+  participants: string[];
   budget: object[];
   gallery: string[];
   documents: string[];

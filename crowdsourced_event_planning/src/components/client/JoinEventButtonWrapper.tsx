@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Button from "../ui/button";
-import { getCurrentUser, isAuthenticated } from "@/lib/auth-client";
+import Button from "@/components/ui/Button_temp";
+import { isAuthenticated, getCurrentUser } from "@/lib/auth-client";
 
 interface JoinEventButtonWrapperProps {
   eventId: string;
@@ -20,19 +20,24 @@ export default function JoinEventButtonWrapper({
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const router = useRouter();
+
   const checkJoinStatus = useCallback(async () => {
     if (!isAuthenticated()) {
       setCheckingStatus(false);
       return;
     }
 
-    try {
-      const user = getCurrentUser();
-      if (!user) return;
+    const user = getCurrentUser();
+    if (!user) {
+      setCheckingStatus(false);
+      return;
+    }
 
+    try {
       const response = await fetch(
         `/api/events/${eventId}/join?userId=${user._id}`
       );
+
       if (response.ok) {
         const data = await response.json();
         setIsJoined(data.isJoined);
@@ -44,7 +49,6 @@ export default function JoinEventButtonWrapper({
     }
   }, [eventId]);
 
-  // Check join status on component mount
   useEffect(() => {
     checkJoinStatus();
   }, [checkJoinStatus]);
@@ -70,20 +74,22 @@ export default function JoinEventButtonWrapper({
         },
         body: JSON.stringify({
           userId: user._id,
-          role: "viewer",
+          role: "viewer", // Default role for joining events
         }),
       });
 
       if (response.ok) {
         setIsJoined(true);
-        // You can add success notification here
+        // Trigger refresh untuk memperbarui UI
+        router.refresh();
       } else {
         const error = await response.json();
         console.error("Failed to join event:", error.error);
-        // You can add error notification here
+        alert("Failed to join event: " + error.error);
       }
     } catch (error) {
       console.error("Error joining event:", error);
+      alert("Error joining event. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -115,14 +121,16 @@ export default function JoinEventButtonWrapper({
 
       if (response.ok) {
         setIsJoined(false);
-        // You can add success notification here
+        // Trigger refresh untuk memperbarui UI
+        router.refresh();
       } else {
         const error = await response.json();
         console.error("Failed to leave event:", error.error);
-        // You can add error notification here
+        alert("Failed to leave event: " + error.error);
       }
     } catch (error) {
       console.error("Error leaving event:", error);
+      alert("Error leaving event. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -161,10 +169,9 @@ export default function JoinEventButtonWrapper({
       onClick={isJoined ? handleLeaveEvent : handleJoinEvent}
       variant={isJoined ? "secondary" : "success"}
       disabled={loading}
-      loading={loading}
       className={className}
     >
-      {isJoined ? "Leave Event" : "Join Event"}
+      {loading ? "Processing..." : isJoined ? "Leave Event" : "Join Event"}
     </Button>
   );
 }

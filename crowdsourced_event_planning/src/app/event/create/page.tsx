@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import Card from "@/components/ui/card";
-import Button from "@/components/ui/button";
+import Card from "@/components/ui/Card_temp";
+import Button from "@/components/ui/Button_temp";
 import Input from "@/components/ui/Input";
 
 export const metadata: Metadata = {
