@@ -14,11 +14,23 @@ import Button from "@/components/ui/button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
+import { headers } from "next/headers";
+import { UserEventModel } from "@/db/models/UserEventModel"
 
 interface EventPageProps {
   params: Promise<{
     event: string;
   }>;
+}
+
+export interface IJwtPayload {
+  _id: string,
+  name: string,
+  role: string,
+  email: string,
+  balance: number,
+  iat: number,
+  exp: number
 }
 
 export async function generateMetadata({
@@ -48,6 +60,20 @@ export async function generateMetadata({
 
 export default async function EventDetailPage({ params }: EventPageProps) {
   const { event: eventParam } = await params;
+  const requestHeaders = await headers();
+  const jwtPayloadEncoded = requestHeaders.get("x-jwt-payload");
+  // console.log(jwtPayloadEncoded, "<<<< ini jwtPayloadEncoded");
+
+  if (!jwtPayloadEncoded) {
+    throw new Error("JWT payload header is missing");
+  }
+
+  const jwtPayload: IJwtPayload = JSON.parse(decodeURIComponent(jwtPayloadEncoded));
+  // console.log(jwtPayload, "<<<< ini jwtPayload");
+
+  const userEvent = await UserEventModel.getUserEventsByUserId(jwtPayload._id);
+  
+  console.log(userEvent, "<<<< ini userEvent");
 
   try {
     const [event, workbooks, ratings, averageRating] = await Promise.all([
@@ -101,15 +127,14 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                         {event.title}
                       </h1>
                       <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          event.status === "open"
-                            ? "bg-green-100 text-green-800"
-                            : event.status === "closed"
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${event.status === "open"
+                          ? "bg-green-100 text-green-800"
+                          : event.status === "closed"
                             ? "bg-red-100 text-red-800"
                             : event.status === "draft"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
                       >
                         {event.status.toUpperCase()}
                       </span>
@@ -233,9 +258,24 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 <Card>
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Event Discussion</h3>
-                    <div className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-600">
                       Join the event to participate in discussions!
-                    </div>
+                    </p>
+
+                    {userEvent[0].role === "admin" ? (
+                      <div className="flex space-x-2">
+                        <Link href={`/event/${eventParam}/chat/admin`} passHref>
+                          <Button className="w-full">Group Chat Admin</Button>
+                        </Link>
+                        <Link href={`/event/${eventParam}/chat/member`} passHref>
+                          <Button className="w-full">Group Chat Member</Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <Link href={`/event/${eventParam}/chat/member`} passHref>
+                        <Button className="w-full">Group Chat Member</Button>
+                      </Link>
+                    )}
                   </div>
                 </Card>
                 {/* Ratings */}
@@ -251,11 +291,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <svg
                             key={star}
-                            className={`w-5 h-5 ${
-                              star <= averageRating
-                                ? "text-yellow-400"
-                                : "text-gray-300"
-                            }`}
+                            className={`w-5 h-5 ${star <= averageRating
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                              }`}
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
