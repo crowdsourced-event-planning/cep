@@ -1,25 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 // import Swal from 'sweetalert2'; // Unused import removed
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import doLogin from "./action";
 import Swal from "sweetalert2";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface IInputLogin {
   email: string;
   password: string;
 }
 
-export default function Login() {
+function LoginForm() {
   const [input, setInput] = useState<IInputLogin>({
     email: "",
     password: "",
   });
-
   const router = useRouter();
-
+  const searchParams = useSearchParams();
+  const { login, refreshAuth } = useAuth();
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -36,14 +37,24 @@ export default function Login() {
           confirmButtonColor: "#3b82f6",
         });
       } else if (result && result.success) {
+        // Update auth context immediately
+        login();
+
+        // Force refresh auth state to ensure navbar updates
+        setTimeout(() => {
+          refreshAuth();
+        }, 100);
         await Swal.fire({
           icon: "success",
           title: "Login Success!",
-          text: "Redirecting to dashboard...",
+          text: "Redirecting...",
           showConfirmButton: false,
+          timer: 1500,
         });
 
-        router.push("/");
+        // Check for callback URL and redirect accordingly
+        const callbackUrl = searchParams.get("callbackUrl");
+        router.push(callbackUrl || "/");
       }
     } catch (err) {
       console.log(err);
@@ -99,9 +110,17 @@ export default function Login() {
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-cyan-400 hover:underline">
             Register here
-          </Link>
+          </Link>{" "}
         </p>
       </form>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

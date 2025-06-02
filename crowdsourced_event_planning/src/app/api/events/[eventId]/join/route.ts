@@ -16,12 +16,18 @@ export async function POST(
       );
     }
 
-    const { eventId } = await params;
+    const { eventId: eventSlugOrId } = await params;
 
-    // Check if event exists
-    const event = await EventModel.getById(eventId);
+    // Check if event exists and get the actual event with ObjectId
+    const event = await EventModel.getBySlugOrId(eventSlugOrId);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Get the actual ObjectId as string
+    const eventId = event._id?.toString();
+    if (!eventId) {
+      return NextResponse.json({ error: "Invalid event ID" }, { status: 400 });
     }
 
     // Check if event is open for joining
@@ -74,7 +80,19 @@ export async function DELETE(
       );
     }
 
-    const { eventId } = await params;
+    const { eventId: eventSlugOrId } = await params;
+
+    // Check if event exists and get the actual event with ObjectId
+    const event = await EventModel.getBySlugOrId(eventSlugOrId);
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Get the actual ObjectId as string
+    const eventId = event._id?.toString();
+    if (!eventId) {
+      return NextResponse.json({ error: "Invalid event ID" }, { status: 400 });
+    }
 
     // Check if user is joined to the event
     const isJoined = await UserEventModel.isUserJoinedEvent(userId, eventId);
@@ -122,7 +140,19 @@ export async function GET(
       );
     }
 
-    const { eventId } = await params;
+    const { eventId: eventSlugOrId } = await params;
+
+    // Check if event exists and get the actual event with ObjectId
+    const event = await EventModel.getBySlugOrId(eventSlugOrId);
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Get the actual ObjectId as string
+    const eventId = event._id?.toString();
+    if (!eventId) {
+      return NextResponse.json({ error: "Invalid event ID" }, { status: 400 });
+    }
 
     // Check if user is joined to the event
     const isJoined = await UserEventModel.isUserJoinedEvent(userId, eventId);

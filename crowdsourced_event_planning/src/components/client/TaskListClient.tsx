@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Task } from "@/types/task";
 
@@ -19,7 +19,7 @@ export default function TaskListClient({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setIsLoading(true);
       setError("");
@@ -38,8 +38,7 @@ export default function TaskListClient({
     } finally {
       setIsLoading(false);
     }
-  };
-
+  }, [workbookId]);
   // This function will be called from the parent component
   useEffect(() => {
     // We set up a polling mechanism to fetch tasks periodically
@@ -48,7 +47,7 @@ export default function TaskListClient({
     }, 10000); // Refresh every 10 seconds
 
     return () => clearInterval(interval);
-  }, [workbookId]);
+  }, [fetchTasks]);
 
   // Define a refresh function that can be exposed to parent components
   useEffect(() => {
@@ -59,7 +58,7 @@ export default function TaskListClient({
       // Cleanup
       delete window.refreshTasks;
     };
-  }, []);
+  }, [fetchTasks]);
 
   return (
     <div>

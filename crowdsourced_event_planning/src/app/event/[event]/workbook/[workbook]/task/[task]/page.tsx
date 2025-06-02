@@ -1,21 +1,11 @@
-// import { Metadata } from "next";
-// import Link from "next/link";
-// import { notFound } from "next/navigation";
-// import { getEventById } from "@/lib/data/event";
-// import { getWorkbookById } from "@/lib/data/workbook";
-// import { getTaskById } from "@/lib/data/task";
-// import Card from "@/components/ui/Card";
-// import Button from "@/components/ui/Button";
-// import { formatDateTime } from "@/lib/utils/formatDate";
-// import ChatComponent from "@/components/client/ChatComponent";
+import { getTaskById } from "@/lib/data/task";
+import { getEventBySlugOrId } from "@/lib/data/event";
+import { getDb } from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
-// interface TaskPageProps {
-//   params: Promise<{
-//     event: string;
-//     workbook: string;
-//     task: string;
-//   }>;
-// }
+interface TaskPageProps {
+  params: Promise<{ event: string; workbook: string; task: string }>;
+}
 
 // export async function generateMetadata({
 //   params,
@@ -335,9 +325,6 @@
 //     console.error("Error loading task:", error);
 //     notFound();
 //   }
-import { getTaskById } from "@/lib/data/task";
-import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 
 interface TaskPageProps {
   params: Promise<{ event: string; workbook: string; task: string }>;
@@ -345,11 +332,11 @@ interface TaskPageProps {
 
 export default async function TaskDetail({ params }: TaskPageProps) {
   const resolvedParams = await params;
-  const eventId = resolvedParams.event;
+  const eventParam = resolvedParams.event;
   const workbookId = resolvedParams.workbook;
   const taskId = resolvedParams.task;
 
-  if (!eventId || !workbookId || !taskId) {
+  if (!eventParam || !workbookId || !taskId) {
     return <div>ID event, workbook, atau task tidak ditemukan</div>;
   }
 
@@ -366,7 +353,19 @@ export default async function TaskDetail({ params }: TaskPageProps) {
   const workbook = await db
     .collection("workbooks")
     .findOne({ _id: new ObjectId(workbookId) });
-  if (!workbook || workbook.eventId.toString() !== eventId) {
+  if (!workbook) {
+    return <div>Workbook tidak ditemukan</div>;
+  }
+
+  // Get the event to verify the relationship
+  const event = await getEventBySlugOrId(eventParam);
+  if (!event) {
+    return <div>Event tidak ditemukan</div>;
+  }
+
+  // Compare the actual event ID with the workbook's eventId
+  const eventId = event._id?.toString();
+  if (workbook.eventId.toString() !== eventId) {
     return <div>Workbook tidak sesuai dengan event ini</div>;
   }
 

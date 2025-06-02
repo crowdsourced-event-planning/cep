@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar"; // tambahkan import ini
+import ConditionalNavbar from "@/components/ConditionalNavbar";
 import { initializeDatabase } from "@/lib/db-init";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Initialize the database collections
 initializeDatabase().catch(console.error);
@@ -32,8 +33,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar /> {/* Tambahkan di sini */}
-        {children}
+        {" "}
+        <AuthProvider>
+          <ConditionalNavbar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

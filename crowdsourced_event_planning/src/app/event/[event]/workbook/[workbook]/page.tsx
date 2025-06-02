@@ -1,4 +1,5 @@
 import { getWorkbookById } from "@/lib/data/workbook";
+import { getEventBySlugOrId } from "@/lib/data/event";
 import TaskForm from "@/components/client/TaskForm";
 import AutoRefreshTaskList from "@/components/client/AutoRefreshTaskList";
 
@@ -8,10 +9,10 @@ interface WorkbookPageProps {
 
 export default async function WorkbookDetail({ params }: WorkbookPageProps) {
   const resolvedParams = await params;
-  const eventId = resolvedParams.event;
+  const eventParam = resolvedParams.event;
   const workbookId = resolvedParams.workbook;
 
-  if (!eventId || !workbookId) {
+  if (!eventParam || !workbookId) {
     return <div>ID event atau workbook tidak ditemukan</div>;
   }
 
@@ -20,6 +21,14 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
     return <div>Workbook tidak ditemukan</div>;
   }
 
+  // Get the event to verify the relationship
+  const event = await getEventBySlugOrId(eventParam);
+  if (!event) {
+    return <div>Event tidak ditemukan</div>;
+  }
+
+  // Compare the actual event ID with the workbook's eventId
+  const eventId = event._id?.toString();
   if (workbook.eventId.toString() !== eventId) {
     return <div>Workbook tidak sesuai dengan event ini</div>;
   }
