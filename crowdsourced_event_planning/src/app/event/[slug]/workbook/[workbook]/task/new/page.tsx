@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/data/event";
 import { getWorkbookById } from "@/lib/data/workbook";
-import Card from "@/components/ui/Card_temp";
-import Button from "@/components/ui/Button_temp";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 
 interface NewTaskPageProps {
   params: Promise<{

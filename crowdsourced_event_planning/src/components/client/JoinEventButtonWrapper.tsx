@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Button from "@/components/ui/Button_temp";
+import Button from "@/components/ui/Button";
 import { isAuthenticated, getCurrentUser } from "@/lib/auth-client";
 
 interface JoinEventButtonWrapperProps {

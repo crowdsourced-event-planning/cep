@@ -10,8 +10,8 @@ import {
 } from "@/lib/data/rating";
 import { getWorkbooksByEventId } from "@/lib/data/workbook";
 import { getTasksByWorkbookId } from "@/lib/data/task";
-import Card from "@/components/ui/Card_temp";
-import Button from "@/components/ui/Button_temp";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
