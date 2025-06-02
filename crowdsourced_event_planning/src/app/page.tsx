@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 import { getAllEvents } from "@/lib/data/event";
 import EventCard from "@/components/EventCard";
+import GetStartedButton from "@/components/client/GetStartedButton";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Collabora - Crowdsourced Event Planning Platform",
@@ -16,7 +18,7 @@ export const metadata: Metadata = {
   },
 };
 
-// Fungsi fetch gambar acak dari Pixabay
+// Fetch a random event image from Pixabay
 async function getRandomEventImage() {
   const apiKey = process.env.PIXABAY_API_KEY;
   const query = "event crowd concert festival party";
@@ -29,14 +31,25 @@ async function getRandomEventImage() {
     const randomIdx = Math.floor(Math.random() * data.hits.length);
     return data.hits[randomIdx].webformatURL;
   }
-  return "/default-hero.jpg"; // fallback jika gagal
+  return "/default-hero.jpg"; // fallback if failed
 }
 
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
-  return (
-    !!localStorage.getItem("token") || document.cookie.includes("access_token=")
+
+  // Cek keberadaan cookie x-user-id
+  return document.cookie.includes("x-user-id=");
+}
+
+/**
+ * Ambil nilai x-user-id dari cookie
+ */
+export function getUserIdFromCookie(): string | null {
+  const cookies = document.cookie.split("; ");
+  const userIdCookie = cookies.find((cookie) =>
+    cookie.startsWith("x-user-id=")
   );
+  return userIdCookie ? userIdCookie.split("=")[1] : null;
 }
 
 export default async function HomePage() {
@@ -57,12 +70,7 @@ export default async function HomePage() {
               creators around the world.
             </p>
             <div className="space-x-4">
-              <a
-                href="/register"
-                className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-              >
-                Get Started
-              </a>
+              <GetStartedButton />
               <a
                 href="/events"
                 className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
@@ -72,10 +80,13 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="md:w-1/2 flex justify-center">
-            <img
+            <Image
               src={heroImage}
               alt="Event Crowd"
+              width={400}
+              height={300}
               className="w-full max-w-md rounded-xl shadow-lg"
+              priority
             />
           </div>
         </div>

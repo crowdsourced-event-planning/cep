@@ -4,9 +4,11 @@ import { toObjectId } from "@/db/utils/validateObjectId";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, description, eventId, createdBy } = await req.json();
+    const { name, description, eventId } = await req.json();
+    const createdBy = req.headers.get("x-user-id"); // Ambil x-user-id dari header
 
     if (!createdBy || !eventId) {
+      console.error("Missing required fields:", { createdBy, eventId });
       return NextResponse.json(
         { message: "User ID and Event ID are required" },
         { status: 400 }

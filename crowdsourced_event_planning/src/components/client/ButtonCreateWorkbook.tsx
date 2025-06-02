@@ -1,14 +1,9 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
-
-function isAuthenticated() {
-  if (typeof window === "undefined") return false;
-  return (
-    !!localStorage.getItem("token") || document.cookie.includes("access_token=")
-  );
-}
+import { isAuthenticated } from "@/lib/auth-client";
 
 export default function ButtonCreateWorkbook({
   eventId,

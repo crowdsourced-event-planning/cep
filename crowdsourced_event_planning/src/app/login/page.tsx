@@ -24,7 +24,6 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Replace with actual login API call
       const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/login`, {
         method: "POST",
         headers: {
@@ -36,16 +35,19 @@ export default function Login() {
 
       if (res.ok) {
         const data = await res.json();
-        localStorage.setItem("userId", data.user._id); // Simpan _id user ke localStorage
+        document.cookie = `x-user-id=${data.user._id}; path=/; max-age=86400`;
         document.cookie = `access_token=${data.access_token}; path=/; max-age=86400`;
+
+        // Trigger event authChanged
         window.dispatchEvent(new Event("authChanged"));
+
         router.push("/");
       } else {
         const data = await res.json();
         Swal.fire({
           icon: "error",
           title: "Login Failed!",
-          text: data.message,
+          text: data.message || "An unknown error occurred.",
           confirmButtonColor: "#3b82f6",
         });
       }

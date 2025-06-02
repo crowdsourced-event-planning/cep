@@ -41,11 +41,6 @@ interface ILoginInput {
   email: string;
   password: string;
 }
-
-interface ILoginResponse {
-  access_token: string;
-}
-
 export default class UserModel {
   private static readonly COLLECTION_NAME = "users";
 
@@ -116,24 +111,48 @@ export default class UserModel {
     return "Registration successful";
   }
 
-  static async login(payload: ILoginInput): Promise<ILoginResponse> {
+  static async login(
+    payload: ILoginInput
+  ): Promise<{ user: IUser; access_token: string }> {
+    // Validasi input menggunakan Zod
     loginSchema.parse(payload);
     const db = await getDb();
 
+    // Cari user berdasarkan email
     const user = await db
       .collection<IUser>(this.COLLECTION_NAME)
       .findOne({ email: payload.email });
     if (!user) throw new CustomError("Invalid email/password", 401);
 
+    // Validasi password
     const isValid = await comparePassword(payload.password, user.password);
     if (!isValid) throw new CustomError("Invalid email/password", 401);
 
+    // Buat token JWT
     const token = await signToken({
       _id: user._id!.toString(),
       name: user.name,
     });
 
-    return { access_token: token };
+    // Kembalikan user dan token
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        role: user.role,
+        badge: user.badge,
+        balance: user.balance,
+        totalRating: user.totalRating,
+        totalUserRating: user.totalUserRating,
+        createdEvents: user.createdEvents,
+        joinedEvents: user.joinedEvents,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      access_token: token,
+    };
   }
 
   static async update(id: string, data: Partial<IUser>): Promise<IUser | null> {

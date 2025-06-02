@@ -7,10 +7,11 @@ const protectedPaths = ["/transaksi", "/chat", "/komentar"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("access_token")?.value;
+  const userId = request.cookies.get("x-user-id")?.value;
 
   // Cek jika path butuh login
   if (protectedPaths.some((path) => pathname.startsWith(path))) {
-    if (!token) {
+    if (!token || !userId) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
@@ -22,5 +23,10 @@ export function middleware(request: NextRequest) {
 
 // Aktifkan middleware hanya untuk path tertentu
 export const config = {
-  matcher: ["/transaksi/:path*", "/chat/:path*", "/komentar/:path*"],
+  matcher: [
+    "/transaksi/:path*",
+    "/chat/:path*",
+    "/komentar/:path*",
+    "/api/workbooks",
+  ],
 };

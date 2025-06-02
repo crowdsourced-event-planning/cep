@@ -1,16 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-
-function isAuthenticated() {
-  if (typeof window === "undefined") return false;
-  // Cek token di localStorage atau cookie
-  return (
-    !!localStorage.getItem("token") || document.cookie.includes("access_token=")
-  );
-}
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -23,41 +16,57 @@ export default function Navbar() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [checked, setChecked] = useState(false);
+
+  // Fungsi untuk mengecek apakah user sudah login
+  const isAuthenticated = () => {
+    return document.cookie.includes("x-user-id=");
+  };
 
   useEffect(() => {
-    const checkAuth = () => {
-      setLoggedIn(isAuthenticated());
-      setChecked(true);
-    };
-    checkAuth();
+    // Set initial state
+    setLoggedIn(isAuthenticated());
 
-    window.addEventListener("authChanged", checkAuth);
-    return () => window.removeEventListener("authChanged", checkAuth);
+    // Tambahkan event listener untuk mendeteksi perubahan login
+    const handleAuthChange = () => {
+      setLoggedIn(isAuthenticated());
+    };
+
+    window.addEventListener("authChanged", handleAuthChange);
+
+    // Cleanup event listener saat komponen di-unmount
+    return () => {
+      window.removeEventListener("authChanged", handleAuthChange);
+    };
   }, []);
 
-  // Logout handler
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    // Hapus cookie
+    document.cookie =
+      "x-user-id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
     document.cookie =
       "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
     setLoggedIn(false);
-    window.dispatchEvent(new Event("authChanged"));
     router.push("/login");
-  };
 
-  // Jangan render menu sebelum status login diketahui
-  if (!checked) {
-    return null; // Tidak render apapun sebelum status login diketahui
-  }
+    // Trigger event authChanged
+    window.dispatchEvent(new Event("authChanged"));
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white shadow">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold text-blue-600">
-          Collabora
+        {/* Logo dan Teks */}
+        <Link href="/" className="flex items-center space-x-2">
+          <Image
+            src="/logo.webp" // Path ke logo di folder public
+            alt="Collabora Logo"
+            width={40} // Lebar logo
+            height={40} // Tinggi logo
+            className="rounded-full" // Opsional: Tambahkan styling
+          />
+          <span className="text-2xl font-bold text-blue-600">Collabora</span>
         </Link>
-        {/* Desktop Menu */}
+
         <div className="hidden md:flex space-x-6 items-center">
           {navLinks.map((link) => (
             <Link

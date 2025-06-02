@@ -36,37 +36,55 @@ export default function CreateWorkbookPage() {
     e.preventDefault();
     setLoading(true);
 
-    // Ambil userId dari localStorage
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      alert("Anda harus login terlebih dahulu.");
-      setLoading(false);
-      return;
-    }
-
     const formData = new FormData(e.currentTarget);
     const title = formData.get("title");
     const description = formData.get("description");
 
-    const res = await fetch("/api/workbooks", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: title,
-        description,
-        eventId,
-        createdBy: userId, // Kirim _id user sebagai createdBy
-      }),
-    });
+    // Ambil x-user-id dari cookie
+    const getUserIdFromCookie = (): string | null => {
+      const cookies = document.cookie.split("; ");
+      const userIdCookie = cookies.find((cookie) =>
+        cookie.startsWith("x-user-id=")
+      );
+      return userIdCookie ? userIdCookie.split("=")[1] : null;
+    };
 
-    setLoading(false);
+    const userId = getUserIdFromCookie();
+    if (!userId) {
+      alert("User ID not found in cookies. Please log in again.");
+      setLoading(false);
+      return;
+    }
 
-    if (res.ok) {
-      router.push(`/event/${eventId}`);
-    } else {
-      alert("Gagal membuat workbook");
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      "x-user-id": userId, // Tambahkan x-user-id ke header
+    };
+
+    try {
+      const res = await fetch("/api/workbooks", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: title,
+          description,
+          eventId,
+          createdBy: userId, // Sertakan userId sebagai createdBy
+        }),
+      });
+
+      if (res.ok) {
+        router.push(`/event/${eventId}`);
+      } else {
+        const errorData = await res.json();
+        console.error("Error response:", errorData);
+        alert(errorData.message || "Failed to create workbook.");
+      }
+    } catch (error) {
+      console.error("Error creating workbook:", error);
+      alert("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
   }
 
