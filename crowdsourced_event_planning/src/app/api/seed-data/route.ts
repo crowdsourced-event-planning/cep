@@ -32,13 +32,13 @@ export async function POST() {
     const sampleWorkbook1 = await WorkbookModel.createWorkbook({
       name: "Event Planning",
       description: "Main workbook for planning the tech conference",
-      eventId: sampleEvent._id?.toString() || "",
+      eventId: sampleEvent._id,
     });
 
     const sampleWorkbook2 = await WorkbookModel.createWorkbook({
       name: "Marketing Materials",
       description: "Workbook for managing marketing and promotional materials",
-      eventId: sampleEvent._id?.toString() || "",
+      eventId: sampleEvent._id,
     });
     return NextResponse.json({
       success: true,

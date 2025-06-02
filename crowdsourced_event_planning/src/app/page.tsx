@@ -3,12 +3,20 @@ import { getAllEvents } from "@/lib/data/event";
 import EventCard from "@/components/EventCard";
 import GetStartedButton from "@/components/client/GetStartedButton";
 import Image from "next/image";
+import HowItWorks from "@/components/HowItWorks";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Collabora - Crowdsourced Event Planning Platform",
   description:
     "Foster collaboration, transparency, and trust among creators, investors, volunteers, and viewers through crowdsourced event planning.",
-  keywords: "event planning, crowdsourcing, collaboration, funding, volunteers",
+  keywords: [
+    "event planning",
+    "crowdsourcing",
+    "collaboration",
+    "funding",
+    "volunteers",
+  ],
   openGraph: {
     title: "Collabora - Crowdsourced Event Planning Platform",
     description:
@@ -20,36 +28,29 @@ export const metadata: Metadata = {
 
 // Fetch a random event image from Pixabay
 async function getRandomEventImage() {
-  const apiKey = process.env.PIXABAY_API_KEY;
-  const query = "event crowd concert festival party";
-  const url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(
-    query
-  )}&image_type=photo&orientation=horizontal&safesearch=true&per_page=20`;
-  const res = await fetch(url, { cache: "no-store" });
-  const data = await res.json();
-  if (data.hits && data.hits.length > 0) {
-    const randomIdx = Math.floor(Math.random() * data.hits.length);
-    return data.hits[randomIdx].webformatURL;
+  try {
+    const apiKey = process.env.PIXABAY_API_KEY;
+    const query = "event crowd concert festival party";
+    const url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(
+      query
+    )}&image_type=photo&orientation=horizontal&safesearch=true&per_page=20`;
+
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      console.error("Failed to fetch Pixabay image:", res.statusText);
+      return "/default-hero.jpg"; // fallback
+    }
+
+    const data = await res.json();
+    if (data.hits && data.hits.length > 0) {
+      const randomIdx = Math.floor(Math.random() * data.hits.length);
+      return data.hits[randomIdx].webformatURL;
+    }
+  } catch (error) {
+    console.error("Error fetching Pixabay image:", error);
   }
+
   return "/default-hero.jpg"; // fallback if failed
-}
-
-export function isAuthenticated(): boolean {
-  if (typeof window === "undefined") return false;
-
-  // Cek keberadaan cookie x-user-id
-  return document.cookie.includes("x-user-id=");
-}
-
-/**
- * Ambil nilai x-user-id dari cookie
- */
-export function getUserIdFromCookie(): string | null {
-  const cookies = document.cookie.split("; ");
-  const userIdCookie = cookies.find((cookie) =>
-    cookie.startsWith("x-user-id=")
-  );
-  return userIdCookie ? userIdCookie.split("=")[1] : null;
 }
 
 export default async function HomePage() {
@@ -71,12 +72,12 @@ export default async function HomePage() {
             </p>
             <div className="space-x-4">
               <GetStartedButton />
-              <a
+              <Link
                 href="/events"
                 className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
               >
                 Explore Projects
-              </a>
+              </Link>
             </div>
           </div>
           <div className="md:w-1/2 flex justify-center">
@@ -99,12 +100,12 @@ export default async function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
               Trending Projects
             </h2>
-            <a
+            <Link
               href="/events"
               className="text-green-600 font-semibold hover:underline"
             >
               See all
-            </a>
+            </Link>
           </div>
           {events.length === 0 ? (
             <div className="text-center py-12">
@@ -132,45 +133,7 @@ export default async function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="bg-white py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-10 text-center">
-            How It Works
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-green-600">1</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Discover</h3>
-              <p className="text-gray-600">
-                Browse a variety of creative projects and events from passionate
-                creators.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-blue-600">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Support</h3>
-              <p className="text-gray-600">
-                Back your favorite projects and help bring them to life with
-                your support.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-purple-600">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Join & Enjoy</h3>
-              <p className="text-gray-600">
-                Participate in events, connect with creators, and enjoy the
-                results together.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HowItWorks />
 
       {/* Call to Action */}
       <section className="bg-gradient-to-r from-green-400 to-blue-500 text-white py-16">
@@ -181,12 +144,12 @@ export default async function HomePage() {
           <p className="text-xl mb-8">
             Launch your idea and find your community on Collabora.
           </p>
-          <a
-            href="/events/create"
+          <Link
+            href="/event/create"
             className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
           >
             Start a Project
-          </a>
+          </Link>
         </div>
       </section>
     </div>

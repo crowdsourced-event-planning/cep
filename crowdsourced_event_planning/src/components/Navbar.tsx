@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { isAuthenticated, logout } from "@/lib/auth-client";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -16,11 +17,6 @@ export default function Navbar() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-
-  // Fungsi untuk mengecek apakah user sudah login
-  const isAuthenticated = () => {
-    return document.cookie.includes("x-user-id=");
-  };
 
   useEffect(() => {
     // Set initial state
@@ -40,11 +36,7 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    // Hapus cookie
-    document.cookie =
-      "x-user-id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    document.cookie =
-      "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    logout(); // Hapus token dari cookie
     setLoggedIn(false);
     router.push("/login");
 

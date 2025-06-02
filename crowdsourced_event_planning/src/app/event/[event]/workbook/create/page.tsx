@@ -14,7 +14,6 @@ export default function CreateWorkbookPage() {
   const [eventTitle, setEventTitle] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  // Ambil judul event untuk breadcrumb
   useEffect(() => {
     async function fetchEvent() {
       if (!eventId) return;
@@ -58,7 +57,7 @@ export default function CreateWorkbookPage() {
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
-      "x-user-id": userId, // Tambahkan x-user-id ke header
+      "x-user-id": userId,
     };
 
     try {
@@ -69,7 +68,7 @@ export default function CreateWorkbookPage() {
           name: title,
           description,
           eventId,
-          createdBy: userId, // Sertakan userId sebagai createdBy
+          createdBy: userId,
         }),
       });
 

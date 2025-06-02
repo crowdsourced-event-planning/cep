@@ -2,55 +2,36 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Button from "@/components/ui/Button";
 import { isAuthenticated } from "@/lib/auth-client";
 
 export default function ButtonCreateWorkbook({
   eventId,
-  mode = "normal", // "normal" | "first"
+  mode = "normal",
 }: {
   eventId: string;
   mode?: "normal" | "first";
 }) {
   const [loggedIn, setLoggedIn] = useState(false);
-  const [checked, setChecked] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     setLoggedIn(isAuthenticated());
-    setChecked(true);
-    const checkAuth = () => setLoggedIn(isAuthenticated());
-    window.addEventListener("authChanged", checkAuth);
-    return () => window.removeEventListener("authChanged", checkAuth);
   }, []);
 
-  if (!checked) return null;
+  const handleClick = () => {
+    if (loggedIn) {
+      router.push(`/event/${eventId}/workbook/create`);
+    } else {
+      router.push("/login");
+    }
+  };
 
-  if (loggedIn) {
-    return (
-      <Button
-        size="sm"
-        className={mode === "first" ? "mt-4" : ""}
-        onClick={() => router.push(`/event/${eventId}/workbook/create`)}
-      >
-        {mode === "first" ? "Create First Workbook" : "Create Workbook"}
-      </Button>
-    );
-  }
-
-  // Belum login
-  if (mode === "first" || mode === "normal") {
-    return (
-      <Button
-        size="sm"
-        variant="secondary"
-        className={mode === "first" ? "mt-4 w-full" : ""}
-        onClick={() => router.push("/login")}
-      >
-        Silakan Login untuk Membuat Workbook
-      </Button>
-    );
-  }
-
-  return null;
+  return (
+    <button
+      onClick={handleClick}
+      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 cursor-pointer"
+    >
+      {mode === "first" ? "Create First Workbook" : "Create Workbook"}
+    </button>
+  );
 }
