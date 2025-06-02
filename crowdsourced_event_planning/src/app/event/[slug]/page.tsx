@@ -9,15 +9,14 @@ import {
   getAverageRatingByEventId,
 } from "@/lib/data/rating";
 import { getWorkbooksByEventId } from "@/lib/data/workbook";
-import { getTasksByWorkbookId } from "@/lib/data/task";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
-import WorkbookList from "@/components/WorkbookList";
-import TaskList from "@/components/TaskList";
 import { toPlain } from "@/db/utils/toPlain";
+import ButtonCreateWorkbook from "@/components/client/ButtonCreateWorkbook";
+import ClientWorkbookListWrapper from "@/components/client/ClientWorkbookListWrapper";
 
 interface EventPageProps {
   params: { slug: string };
@@ -61,9 +60,6 @@ export default async function EventDetailPage(props: EventPageProps) {
   const workbooks = toPlain(
     await getWorkbooksByEventId(event._id || "")
   ) as import("../../../../types/workbook").Workbook[];
-  const tasks = toPlain(
-    await getTasksByWorkbookId(event._id || "")
-  ) as import("../../../../types/task").Task[];
 
   const userId = (await cookies()).get("x-user-id")?.value || "";
   const isCreator = event.createdBy?.toString() === userId?.toString();
@@ -181,28 +177,47 @@ export default async function EventDetailPage(props: EventPageProps) {
               </Card>
               {/* Workbooks & Tasks hanya untuk pembuat event */}
               {isCreator && (
-                <>
-                  <section>
-                    <div className="flex justify-between items-center mb-2">
-                      <h2 className="font-bold text-lg">Workbook</h2>
-                      <Link href={`/event/${event.slug}/workbook/create`}>
-                        <Button>+ Create Workbook</Button>
-                      </Link>
+                <Card>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        Workbooks
+                      </h2>
+                      <ButtonCreateWorkbook eventSlug={slug} />
                     </div>
-                    <WorkbookList workbooks={workbooks} />
-                  </section>
-                  <section>
-                    <h2 className="font-bold text-lg mb-2">Task</h2>
-                    <TaskList tasks={tasks} />
-                  </section>
-                </>
+                    {workbooks.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">
+                          No workbooks created yet.
+                        </p>
+                        <ButtonCreateWorkbook eventSlug={slug} mode="first" />
+                      </div>
+                    ) : (
+                      <ClientWorkbookListWrapper
+                        workbooks={workbooks.map((workbook) => ({
+                          ...workbook,
+                          _id: workbook._id?.toString() || "",
+                          eventId: workbook.eventId?.toString?.() || "",
+                          createdBy: workbook.createdBy?.toString?.() || "",
+                          createdAt: workbook.createdAt
+                            ? new Date(workbook.createdAt)
+                            : new Date(),
+                          updatedAt: workbook.updatedAt
+                            ? new Date(workbook.updatedAt)
+                            : new Date(),
+                        }))}
+                        eventSlug={slug}
+                      />
+                    )}
+                  </div>
+                </Card>
               )}
             </div>
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Funding Progress */}
               <FundingTracker
-                eventId={event._id}
+                eventId={event._id?.toString() || ""}
                 targetAmount={event.targetFunding}
               />
               {/* Event Actions */}

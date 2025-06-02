@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import EventModel from "@/db/models/EventModel";
 import { slugify } from "@/lib/utils/slugify";
+import { getEventBySlug } from "@/lib/data/event";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,15 +42,20 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
-  try {
-    const events = await EventModel.getAll();
-    return NextResponse.json(events);
-  } catch (error) {
-    console.error("Error fetching events:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  const { slug } = params;
+  const event = await getEventBySlug(slug);
+
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
+
+  // Pastikan _id dikirim sebagai string
+  return NextResponse.json({
+    ...event,
+    _id: event._id?.toString?.() || "",
+  });
 }
