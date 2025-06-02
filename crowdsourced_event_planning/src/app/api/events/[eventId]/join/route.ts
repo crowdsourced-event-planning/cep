@@ -1,24 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import EventModel from "@/db/models/EventModel";
 
-interface Context {
-  params: { eventId: string };
-}
-
-export async function POST(request: NextRequest, { params }: Context) {
+export async function POST(
+  request: NextRequest,
+  context: { params: { eventId: string } }
+) {
   try {
+    const { eventId } = await context.params;
     const { userId } = await request.json();
+
     if (!userId) {
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
       );
     }
-    const { eventId } = params;
 
     const event = await EventModel.getById(eventId);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    if (!event.participants) {
+      event.participants = [];
     }
 
     event.participants.push(userId);
@@ -34,20 +38,28 @@ export async function POST(request: NextRequest, { params }: Context) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: Context) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { eventId: string } }
+) {
   try {
+    const { eventId } = await context.params;
     const { userId } = await request.json();
+
     if (!userId) {
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
       );
     }
-    const { eventId } = params;
 
     const event = await EventModel.getById(eventId);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    if (!event.participants) {
+      event.participants = [];
     }
 
     event.participants = event.participants.filter((id) => id !== userId);

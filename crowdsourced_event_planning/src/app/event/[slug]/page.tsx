@@ -1,17 +1,25 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventBySlug } from "@/lib/data/event";
 import {
   getRatingsByEventId,
   getAverageRatingByEventId,
 } from "@/lib/data/rating";
+import { getWorkbooksByEventId } from "@/lib/data/workbook";
+import { getTasksByWorkbookId } from "@/lib/data/task";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
+import WorkbookList from "@/components/WorkbookList";
+import TaskList from "@/components/TaskList";
+import { toPlain } from "@/db/utils/toPlain";
+import { Workbook } from "../../../../types/workbook";
+import { Task } from "../../../../types/task";
 
 interface EventPageProps {
   params: { slug: string };
@@ -20,8 +28,7 @@ interface EventPageProps {
 export async function generateMetadata(
   props: EventPageProps
 ): Promise<Metadata> {
-  const params = await props.params; // Tambahkan await di sini
-  const event = await getEventBySlug(params.slug);
+  const event = await getEventBySlug(props.params.slug);
 
   if (!event) {
     return {
@@ -43,18 +50,25 @@ export async function generateMetadata(
 }
 
 export default async function EventDetailPage(props: EventPageProps) {
-  const params = await props.params; // Tambahkan await di sini
-  const event = await getEventBySlug(params.slug);
+  const { slug } = await props.params;
+  const event = await getEventBySlug(slug);
 
   if (!event) {
     notFound();
   }
 
-  // Ambil data lain secara paralel
+  const userId = (await cookies()).get("x-user-id")?.value || "";
+  const isCreator = event.createdBy?.toString() === userId?.toString();
+
   const [ratings, averageRating] = await Promise.all([
     getRatingsByEventId(event._id?.toString() || ""),
     getAverageRatingByEventId(event._id?.toString() || ""),
   ]);
+
+  const workbooksRaw = await getWorkbooksByEventId(event._id?.toString() || "");
+  const tasksRaw = await getTasksByWorkbookId(event._id?.toString() || "");
+  const workbooks = toPlain(workbooksRaw);
+  const tasks = toPlain(tasksRaw);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -162,9 +176,24 @@ export default async function EventDetailPage(props: EventPageProps) {
                   )}
                 </div>
               </Card>
-              {/* Workbooks */}
-              {/* Hanya tampilkan jika pengguna login, gunakan komponen client-side jika perlu */}
-              {/* Contoh: <ClientOnly>{loggedIn && <Card>...</Card>}</ClientOnly> */}
+              {/* Workbooks & Tasks hanya untuk pembuat event */}
+              {isCreator && (
+                <>
+                  <section>
+                    <div className="flex justify-between items-center mb-2">
+                      <h2 className="font-bold text-lg">Workbook</h2>
+                      <Link href={`/event/${event.slug}/workbook/create`}>
+                        <Button>+ Create Workbook</Button>
+                      </Link>
+                    </div>
+                    <WorkbookList workbooks={workbooks as Workbook[]} />
+                  </section>
+                  <section>
+                    <h2 className="font-bold text-lg mb-2">Task</h2>
+                    <TaskList tasks={tasks as Task[]} />
+                  </section>
+                </>
+              )}
             </div>
             {/* Sidebar */}
             <div className="space-y-6">
@@ -176,11 +205,19 @@ export default async function EventDetailPage(props: EventPageProps) {
               {/* Event Actions */}
               <Card>
                 <div className="space-y-3">
-                  <JoinEventButtonWrapper
-                    eventId={event._id?.toString() || ""}
-                    eventStatus={event.status}
-                    className="w-full"
-                  />
+                  {isCreator ? (
+                    <div className="mb-4">
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                        Kamu pembuat event ini
+                      </span>
+                    </div>
+                  ) : (
+                    <JoinEventButtonWrapper
+                      eventId={event._id?.toString() || ""}
+                      eventStatus={event.status}
+                      className="w-full"
+                    />
+                  )}
                   <Button variant="secondary" className="w-full">
                     Share Event
                   </Button>
