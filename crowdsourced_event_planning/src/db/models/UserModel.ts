@@ -4,11 +4,6 @@ import CustomError from "@/db/exceptions/CustomError";
 import { signToken } from "@/lib/jwt";
 import { z } from "zod";
 import { getDb } from "../config/mongodb";
-import {
-  validateObjectId,
-  toObjectId,
-  createObjectId,
-} from "../utils/validateObjectId";
 
 export interface IUser {
   _id?: ObjectId;
@@ -50,11 +45,10 @@ export default class UserModel {
   private static readonly COLLECTION_NAME = "users";
 
   static async getById(id: string): Promise<IUser | null> {
-    validateObjectId(id, "User ID");
     const db = await getDb();
     const user = await db
       .collection<IUser>(this.COLLECTION_NAME)
-      .findOne({ _id: toObjectId(id) });
+      .findOne({ _id: new ObjectId(id) });
     return user;
   }
 
@@ -65,11 +59,12 @@ export default class UserModel {
       .findOne({ email });
     return user;
   }
+
   static async create(userData: Partial<IUser>): Promise<IUser> {
     const db = await getDb();
     const now = new Date();
     const userToInsert: IUser = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       name: userData.name!,
       email: userData.email!,
       password: userData.password!,
@@ -97,7 +92,7 @@ export default class UserModel {
     if (isExist) throw new CustomError("Email already registered", 400);
     const now = new Date();
     const user: IUser = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       name: payload.name,
       email: payload.email,
       password: await hashPassword(payload.password),
@@ -137,7 +132,6 @@ export default class UserModel {
   }
 
   static async update(id: string, data: Partial<IUser>): Promise<IUser | null> {
-    validateObjectId(id, "User ID");
     const db = await getDb();
 
     const updateData = {
@@ -148,7 +142,7 @@ export default class UserModel {
     const result = await db
       .collection<IUser>(this.COLLECTION_NAME)
       .findOneAndUpdate(
-        { _id: toObjectId(id) },
+        { _id: new ObjectId(id) },
         { $set: updateData },
         { returnDocument: "after" }
       );
@@ -157,12 +151,11 @@ export default class UserModel {
   }
 
   static async delete(id: string): Promise<string> {
-    validateObjectId(id, "User ID");
     const db = await getDb();
 
     await db
       .collection<IUser>(this.COLLECTION_NAME)
-      .deleteOne({ _id: toObjectId(id) });
+      .deleteOne({ _id: new ObjectId(id) });
     return "User deleted";
   }
 

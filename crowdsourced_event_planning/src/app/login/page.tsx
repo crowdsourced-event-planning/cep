@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-// import Swal from 'sweetalert2'; // Unused import removed
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import doLogin from "./action";

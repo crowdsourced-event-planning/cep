@@ -16,7 +16,6 @@ export default async function EventsPage() {
               key={event._id?.toString() || ""}
               event={{
                 ...event,
-                _id: event._id?.toString() || "",
                 createdAt: event.createdAt || new Date(),
                 updatedAt: event.updatedAt || new Date(),
               }}

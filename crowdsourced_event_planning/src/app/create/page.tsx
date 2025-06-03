@@ -7,6 +7,12 @@ import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/Input";
 import Swal from "sweetalert2";
+import { getCurrentUser, isAuthenticated } from "@/lib/auth-client";
+import ImageUploader from "@/components/ImageUploader";
+import DocumentUploader from "@/components/DocumentUploader";
+import ImageModal from "@/components/ImageModel";
+import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface EventFormData {
   title: string;
@@ -46,6 +52,12 @@ export default function CreateEventPage() {
     name: "",
     amount: 0,
   });
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [documents, setDocuments] = useState<string[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalIndex, setModalIndex] = useState(0);
+
+  const today = new Date().toISOString().split("T")[0];
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -56,6 +68,16 @@ export default function CreateEventPage() {
     setFormData((prev) => ({
       ...prev,
       [name]: name === "targetFunding" ? Number(value) : value,
+    }));
+  };
+
+  const handleFundingChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const raw = e.target.value.replace(/\./g, ""); // hapus titik
+    setFormData((prev) => ({
+      ...prev,
+      targetFunding: Number(raw),
     }));
   };
 
@@ -121,20 +143,45 @@ export default function CreateEventPage() {
       return;
     }
 
+    if (!isAuthenticated()) {
+      await Swal.fire({
+        icon: "error",
+        title: "Not Authenticated",
+        text: "You must be logged in to create an event.",
+        confirmButtonColor: "#3b82f6",
+      });
+      router.push("/login?callbackUrl=/create");
+      return;
+    }
+
+    // Ambil user dari JWT/cookie
+    const user = getCurrentUser();
+    if (!user || !user._id) {
+      await Swal.fire({
+        icon: "error",
+        title: "Not Authenticated",
+        text: "You must be logged in to create an event.",
+        confirmButtonColor: "#3b82f6",
+      });
+      router.push("/login?callbackUrl=/create");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Hard-coded user ID for now (should come from auth context)
-      const userId = "6838676f883ee5cb0dac53eb";
+      const userId = user._id;
 
       const eventData = {
         ...formData,
+        creator: user._id,
         budget: budgetItems,
         status: isDraft ? "draft" : "open",
-        creator: userId,
+        gallery,
+        documents,
       };
 
-      const response = await fetch("/api/events", {
+      await fetch("/api/events", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -142,12 +189,6 @@ export default function CreateEventPage() {
         },
         body: JSON.stringify(eventData),
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to create event");
-      }
 
       await Swal.fire({
         icon: "success",
@@ -157,9 +198,8 @@ export default function CreateEventPage() {
         timer: 2000,
       });
 
-      // Redirect to home page
       router.push("/");
-      router.refresh(); // Refresh to update events list
+      router.refresh();
     } catch (error) {
       console.error("Error creating event:", error);
       await Swal.fire({
@@ -172,6 +212,14 @@ export default function CreateEventPage() {
       setLoading(false);
     }
   };
+
+  function formatRupiah(value: number | string) {
+    if (!value) return "";
+    return value
+      .toString()
+      .replace(/\D/g, "")
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -348,6 +396,7 @@ export default function CreateEventPage() {
                         value={formData.startDate}
                         onChange={handleInputChange}
                         disabled={loading}
+                        min={today}
                       />
                     </div>
 
@@ -384,6 +433,7 @@ export default function CreateEventPage() {
                         value={formData.endDate}
                         onChange={handleInputChange}
                         disabled={loading}
+                        min={today}
                       />
                     </div>
 
@@ -402,6 +452,7 @@ export default function CreateEventPage() {
                         value={formData.endTime}
                         onChange={handleInputChange}
                         disabled={loading}
+                        min={formData.startTime || undefined} // End time tidak bisa sebelum start time
                       />
                     </div>
                   </div>
@@ -430,11 +481,14 @@ export default function CreateEventPage() {
                       <Input
                         id="targetFunding"
                         name="targetFunding"
-                        type="number"
+                        type="text"
                         min="0"
-                        step="1000"
-                        value={formData.targetFunding || ""}
-                        onChange={handleInputChange}
+                        value={
+                          formData.targetFunding
+                            ? formatRupiah(formData.targetFunding)
+                            : ""
+                        }
+                        onChange={handleFundingChange}
                         placeholder="0"
                         className="pl-8"
                         disabled={loading}
@@ -527,9 +581,22 @@ export default function CreateEventPage() {
                   </div>
                 </div>
               </Card>
+              {/* Event Gallery & Document */}
+              <Card>
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    Event Gallery & Document
+                  </h2>
+                  <ImageUploader images={gallery} setImages={setGallery} />
+                  <DocumentUploader
+                    documentUrl={documents[0] || ""}
+                    setDocumentUrl={(url) => setDocuments([url])}
+                  />
+                </div>
+              </Card>
               {/* Action Buttons */}{" "}
               <div className="flex justify-end space-x-4">
-                <Button
+                {/* <Button
                   type="button"
                   variant="secondary"
                   onClick={() =>
@@ -541,7 +608,7 @@ export default function CreateEventPage() {
                   disabled={loading}
                 >
                   {loading ? "Saving..." : "Save as Draft"}
-                </Button>
+                </Button> */}
                 <Button type="submit" disabled={loading}>
                   {loading ? "Creating..." : "Create Event"}
                 </Button>
@@ -556,8 +623,52 @@ export default function CreateEventPage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">Preview</h3>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="aspect-video bg-gray-200 rounded mb-3 flex items-center justify-center">
-                    <span className="text-gray-500">Event Image</span>
+                  <div className="aspect-video bg-gray-200 rounded mb-3 flex items-center justify-center relative">
+                    {gallery.length === 0 ? (
+                      <span className="text-gray-500">Event Image</span>
+                    ) : (
+                      <>
+                        <Image
+                          src={gallery[modalIndex]}
+                          alt="Preview"
+                          width={400}
+                          height={225}
+                          className="object-cover w-full h-full rounded cursor-pointer"
+                          onClick={() => setModalOpen(true)}
+                        />
+                        {gallery.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setModalIndex(
+                                  (modalIndex - 1 + gallery.length) %
+                                    gallery.length
+                                );
+                              }}
+                              aria-label="Previous image"
+                            >
+                              <ChevronLeft className="w-6 h-6 text-gray-700 cursor-pointer" />
+                            </button>
+                            <button
+                              type="button"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setModalIndex(
+                                  (modalIndex + 1) % gallery.length
+                                );
+                              }}
+                              aria-label="Next image"
+                            >
+                              <ChevronRight className="w-6 h-6 text-gray-700 cursor-pointer" />
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                   <h4 className="font-medium text-gray-900 mb-1">
                     {formData.title || "Your Event Title"}
@@ -579,7 +690,7 @@ export default function CreateEventPage() {
             <Card>
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Tips for Success
+                  Tips Guidelines
                 </h3>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start">
@@ -607,7 +718,7 @@ export default function CreateEventPage() {
             </Card>
 
             {/* Help */}
-            <Card>
+            {/* <Card>
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Need Help?
@@ -624,10 +735,21 @@ export default function CreateEventPage() {
                   </Button>
                 </div>
               </div>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>
+      {modalOpen && (
+        <ImageModal
+          images={gallery}
+          current={modalIndex}
+          onClose={() => setModalOpen(false)}
+          onPrev={() =>
+            setModalIndex((modalIndex - 1 + gallery.length) % gallery.length)
+          }
+          onNext={() => setModalIndex((modalIndex + 1) % gallery.length)}
+        />
+      )}
     </div>
   );
 }

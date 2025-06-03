@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   try {
     // Check if event exists and if user is the creator
     const event = await getEventById(eventId);
-    if (!event || event.creator !== userId) {
+    if (!event || event.creator?.toString() !== userId) {
       return NextResponse.json(
         { error: "Anda tidak berwenang untuk membuat workbook di event ini" },
         { status: 403 }

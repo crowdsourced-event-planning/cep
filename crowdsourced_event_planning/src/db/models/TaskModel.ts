@@ -1,22 +1,18 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
-import {
-  validateObjectId,
-  toObjectId,
-  createObjectId,
-} from "../utils/validateObjectId";
 
 export interface ITask {
   _id?: ObjectId;
   name: string;
-  title?: string; // Keep both for backward compatibility
+  title?: string;
+  slug: string;
   description: string;
-  workbookId: string;
-  assignedTo?: string[];
+  workbookId: ObjectId;
+  assignedTo?: ObjectId[];
   status: string;
   priority?: string;
   dueDate?: Date;
-  parentTask?: string;
+  parentTask?: ObjectId;
   customColumn?: object[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -29,18 +25,17 @@ export class TaskModel {
     const db = await getDb();
     const tasks = await db
       .collection<ITask>(this.COLLECTION_NAME)
-      .find({ workbookId })
+      .find({ workbookId: new ObjectId(workbookId) })
       .sort({ createdAt: -1 })
       .toArray();
     return tasks;
   }
 
   static async getTaskById(taskId: string): Promise<ITask | null> {
-    validateObjectId(taskId, "Task ID");
     const db = await getDb();
     const task = await db
       .collection<ITask>(this.COLLECTION_NAME)
-      .findOne({ _id: toObjectId(taskId) });
+      .findOne({ _id: new ObjectId(taskId) });
     return task;
   }
 
@@ -48,20 +43,25 @@ export class TaskModel {
     const db = await getDb();
     const tasks = await db
       .collection<ITask>(this.COLLECTION_NAME)
-      .find({ parentTask: parentTaskId })
+      .find({ parentTask: new ObjectId(parentTaskId) })
       .sort({ createdAt: -1 })
       .toArray();
     return tasks;
   }
+
   static async createTask(data: Partial<ITask>): Promise<ITask> {
     const db = await getDb();
     const now = new Date();
     const taskToInsert: ITask = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       name: data.name || data.title!,
       title: data.title || data.name,
+      slug: data.slug!,
       description: data.description!,
-      workbookId: data.workbookId!,
+      workbookId:
+        typeof data.workbookId === "string"
+          ? new ObjectId(data.workbookId)
+          : data.workbookId!,
       assignedTo: data.assignedTo || [],
       status: data.status || "pending",
       priority: data.priority || "medium",
@@ -79,7 +79,6 @@ export class TaskModel {
     taskId: string,
     data: Partial<ITask>
   ): Promise<ITask | null> {
-    validateObjectId(taskId, "Task ID");
     const db = await getDb();
 
     const updateData = {
@@ -90,7 +89,7 @@ export class TaskModel {
     const result = await db
       .collection<ITask>(this.COLLECTION_NAME)
       .findOneAndUpdate(
-        { _id: toObjectId(taskId) },
+        { _id: new ObjectId(taskId) },
         { $set: updateData },
         { returnDocument: "after" }
       );
@@ -99,12 +98,11 @@ export class TaskModel {
   }
 
   static async deleteTask(taskId: string): Promise<boolean> {
-    validateObjectId(taskId, "Task ID");
     const db = await getDb();
 
     const result = await db
       .collection<ITask>(this.COLLECTION_NAME)
-      .deleteOne({ _id: toObjectId(taskId) });
+      .deleteOne({ _id: new ObjectId(taskId) });
     return result.deletedCount > 0;
   }
 
@@ -112,15 +110,14 @@ export class TaskModel {
     taskId: string,
     userId: string
   ): Promise<ITask | null> {
-    validateObjectId(taskId, "Task ID");
     const db = await getDb();
 
     const result = await db
       .collection<ITask>(this.COLLECTION_NAME)
       .findOneAndUpdate(
-        { _id: toObjectId(taskId) },
+        { _id: new ObjectId(taskId) },
         {
-          $addToSet: { assignedTo: userId },
+          $addToSet: { assignedTo: new ObjectId(userId) },
           $set: { updatedAt: new Date() },
         },
         { returnDocument: "after" }
@@ -133,20 +130,26 @@ export class TaskModel {
     taskId: string,
     userId: string
   ): Promise<ITask | null> {
-    validateObjectId(taskId, "Task ID");
     const db = await getDb();
 
     const result = await db
       .collection<ITask>(this.COLLECTION_NAME)
       .findOneAndUpdate(
-        { _id: toObjectId(taskId) },
+        { _id: new ObjectId(taskId) },
         {
-          $pull: { assignedTo: userId },
+          $pull: { assignedTo: new ObjectId(userId) },
           $set: { updatedAt: new Date() },
         },
         { returnDocument: "after" }
       );
 
     return result || null;
+  }
+
+  static async getTaskBySlug(workbookId: string, slug: string) {
+    const db = await getDb();
+    return db
+      .collection<ITask>(this.COLLECTION_NAME)
+      .findOne({ workbookId: new ObjectId(workbookId), slug });
   }
 }

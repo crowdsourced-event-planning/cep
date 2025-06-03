@@ -5,7 +5,7 @@ import Card from "./ui/card";
 import Button from "./ui/button";
 import JoinEventButtonWrapper from "./client/JoinEventButtonWrapper";
 import { formatDate, formatCurrency } from "@/lib/utils/formatDate";
-import { Event } from "../../types/event";
+import type { IEvent as Event } from "@/db/models/EventModel";
 
 interface EventCardProps {
   event: Event;
@@ -22,7 +22,7 @@ export default function EventCard({
       : 0;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
+    <Card className="hover:shadow-lg transition-shadow duration-200 max-w-sm w-full mx-auto">
       <div className="space-y-4">
         {" "}
         {/* Event Image */}
@@ -41,7 +41,7 @@ export default function EventCard({
         )}
         {/* Event Info */}
         <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2 truncate">
             {event.title}
           </h3>
           <p className="text-gray-600 text-sm mb-3 line-clamp-3">
@@ -64,7 +64,7 @@ export default function EventCard({
               {event.status.toUpperCase()}
             </span>
             <span className="text-sm text-gray-500">
-              {formatDate(event.createdAt)}
+              {event.createdAt ? formatDate(event.createdAt) : "-"}
             </span>
           </div>
 
@@ -84,11 +84,11 @@ export default function EventCard({
               ></div>
             </div>
 
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex flex-wrap justify-between items-center text-sm w-full">
               <span className="text-gray-600">
                 {formatCurrency(event.currentFunding)} raised
               </span>
-              <span className="text-gray-600">
+              <span className="text-gray-600 text-right">
                 of {formatCurrency(event.targetFunding)}
               </span>
             </div>

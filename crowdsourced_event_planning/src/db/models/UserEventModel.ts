@@ -1,6 +1,5 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
-import { validateObjectId, createObjectId } from "../utils/validateObjectId";
 
 export interface IUserEvent {
   _id?: ObjectId;
@@ -17,7 +16,6 @@ export class UserEventModel {
   private static readonly COLLECTION_NAME = "userevents";
 
   static async getUserEventsByUserId(userId: string): Promise<IUserEvent[]> {
-    validateObjectId(userId, "User ID");
     const db = await getDb();
     const userEvents = await db
       .collection<IUserEvent>(this.COLLECTION_NAME)
@@ -28,7 +26,6 @@ export class UserEventModel {
   }
 
   static async getUserEventsByEventId(eventId: string): Promise<IUserEvent[]> {
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
     const userEvents = await db
       .collection<IUserEvent>(this.COLLECTION_NAME)
@@ -43,13 +40,11 @@ export class UserEventModel {
     eventId: string,
     role: string = "viewer"
   ): Promise<IUserEvent> {
-    validateObjectId(userId, "User ID");
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
 
     const now = new Date();
     const userEventToInsert: IUserEvent = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       userId,
       eventId,
       role,
@@ -70,8 +65,6 @@ export class UserEventModel {
     eventId: string,
     status: string
   ): Promise<IUserEvent | null> {
-    validateObjectId(userId, "User ID");
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
 
     const result = await db
@@ -94,8 +87,6 @@ export class UserEventModel {
     userId: string,
     eventId: string
   ): Promise<boolean> {
-    validateObjectId(userId, "User ID");
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
 
     const userEvent = await db
@@ -108,8 +99,6 @@ export class UserEventModel {
     userId: string,
     eventId: string
   ): Promise<string | null> {
-    validateObjectId(userId, "User ID");
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
 
     const userEvent = await db
@@ -119,8 +108,6 @@ export class UserEventModel {
   }
 
   static async leaveEvent(userId: string, eventId: string): Promise<string> {
-    validateObjectId(userId, "User ID");
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
 
     await db
@@ -130,8 +117,6 @@ export class UserEventModel {
   }
 
   static async isJoined(userId: string, eventId: string): Promise<boolean> {
-    validateObjectId(userId, "User ID");
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
 
     const isJoined = await db
@@ -141,7 +126,6 @@ export class UserEventModel {
   }
 
   static async getParticipant(eventId: string): Promise<IUserEvent[] | null> {
-    validateObjectId(eventId, "Event ID");
     const db = await getDb();
 
     const participants = await db
@@ -149,5 +133,21 @@ export class UserEventModel {
       .find({ eventId })
       .toArray();
     return participants;
+  }
+
+  static async getParticipantsByEventId(eventId: string) {
+    const db = await getDb();
+    // Ambil user-event yang join event ini
+    const userEvents = await this.getUserEventsByEventId(eventId);
+    const userIds = userEvents.map((ue) => new ObjectId(ue.userId));
+    if (userIds.length === 0) return [];
+
+    // Ambil data user dari collection users
+    const users = await db
+      .collection("users")
+      .find({ _id: { $in: userIds } })
+      .toArray();
+
+    return users;
   }
 }

@@ -4,6 +4,7 @@ import "./globals.css";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import { initializeDatabase } from "@/lib/db-init";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 // Initialize the database collections
 initializeDatabase().catch(console.error);
@@ -37,6 +38,7 @@ export default function RootLayout({
         <AuthProvider>
           <ConditionalNavbar />
           {children}
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

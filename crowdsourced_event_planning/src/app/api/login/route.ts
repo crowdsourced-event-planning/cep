@@ -8,7 +8,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const token = await UserModel.login(body);
 
-    return NextResponse.json(token, { status: 200 });
+    // Ambil user dari database
+    const user = await UserModel.getByEmail(body.email);
+
+    // Kembalikan token dan user (minimal _id)
+    return NextResponse.json(
+      { access_token: token.access_token, user: { _id: user?._id } },
+      { status: 200 }
+    );
   } catch (err: unknown) {
     if (err instanceof ZodError) {
       const error = err.errors[0];

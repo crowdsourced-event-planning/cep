@@ -9,14 +9,16 @@ interface JoinEventButtonWrapperProps {
   eventId: string;
   eventStatus: string;
   className?: string;
+  initialIsJoined?: boolean;
 }
 
 export default function JoinEventButtonWrapper({
   eventId,
   eventStatus,
   className = "",
+  initialIsJoined = false,
 }: JoinEventButtonWrapperProps) {
-  const [isJoined, setIsJoined] = useState(false);
+  const [isJoined, setIsJoined] = useState(initialIsJoined);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const router = useRouter();
@@ -75,12 +77,16 @@ export default function JoinEventButtonWrapper({
       });
 
       if (response.ok) {
-        setIsJoined(true);
-        // You can add success notification here
+        // Setelah join berhasil, refresh status join
+        await checkJoinStatus();
+        router.refresh();
       } else {
         const error = await response.json();
+        if (error.error === "User is already joined to this event") {
+          // Jika sudah join, set isJoined ke true
+          setIsJoined(true);
+        }
         console.error("Failed to join event:", error.error);
-        // You can add error notification here
       }
     } catch (error) {
       console.error("Error joining event:", error);
@@ -114,12 +120,12 @@ export default function JoinEventButtonWrapper({
       });
 
       if (response.ok) {
-        setIsJoined(false);
-        // You can add success notification here
+        // Setelah leave berhasil, refresh status join
+        await checkJoinStatus();
+        router.refresh();
       } else {
         const error = await response.json();
         console.error("Failed to leave event:", error.error);
-        // You can add error notification here
       }
     } catch (error) {
       console.error("Error leaving event:", error);

@@ -1,17 +1,14 @@
-import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
-import {
-  validateObjectId,
-  toObjectId,
-  createObjectId,
-} from "../utils/validateObjectId";
+import slugify from "slugify";
+import { ObjectId } from "mongodb";
 
 export interface IWorkbook {
-  _id?: ObjectId;
+  _id: ObjectId;
   name: string;
+  slug: string;
   description: string;
-  eventId: string;
-  createdAt?: Date;
+  eventId: ObjectId;
+  createdAt: Date;
   updatedAt?: Date;
 }
 
@@ -22,29 +19,42 @@ export class WorkbookModel {
     const db = await getDb();
     const workbooks = await db
       .collection<IWorkbook>(this.COLLECTION_NAME)
-      .find({ eventId })
+      .find({ eventId: new ObjectId(eventId) })
       .sort({ createdAt: -1 })
       .toArray();
     return workbooks;
   }
 
   static async getWorkbookById(workbookId: string): Promise<IWorkbook | null> {
-    validateObjectId(workbookId, "Workbook ID");
     const db = await getDb();
     const workbook = await db
       .collection<IWorkbook>(this.COLLECTION_NAME)
-      .findOne({ _id: toObjectId(workbookId) });
+      .findOne({ _id: new ObjectId(workbookId) });
     return workbook;
+  }
+
+  static async getWorkbookBySlug(slug: string): Promise<IWorkbook | null> {
+    const db = await getDb();
+    return db.collection<IWorkbook>("workbooks").findOne({ slug });
   }
 
   static async createWorkbook(data: Partial<IWorkbook>): Promise<IWorkbook> {
     const db = await getDb();
     const now = new Date();
+    const slug =
+      data.slug ||
+      slugify(data.name || "", { lower: true, strict: true }) ||
+      new ObjectId().toString();
+
     const workbookToInsert: IWorkbook = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       name: data.name!,
+      slug,
       description: data.description!,
-      eventId: data.eventId!,
+      eventId:
+        typeof data.eventId === "string"
+          ? new ObjectId(data.eventId)
+          : data.eventId!,
       createdAt: now,
       updatedAt: now,
     };
@@ -58,7 +68,6 @@ export class WorkbookModel {
     workbookId: string,
     data: Partial<IWorkbook>
   ): Promise<IWorkbook | null> {
-    validateObjectId(workbookId, "Workbook ID");
     const db = await getDb();
 
     const updateData = {
@@ -69,7 +78,7 @@ export class WorkbookModel {
     const result = await db
       .collection<IWorkbook>(this.COLLECTION_NAME)
       .findOneAndUpdate(
-        { _id: toObjectId(workbookId) },
+        { _id: new ObjectId(workbookId) },
         { $set: updateData },
         { returnDocument: "after" }
       );
@@ -78,12 +87,11 @@ export class WorkbookModel {
   }
 
   static async deleteWorkbook(workbookId: string): Promise<boolean> {
-    validateObjectId(workbookId, "Workbook ID");
     const db = await getDb();
 
     const result = await db
       .collection<IWorkbook>(this.COLLECTION_NAME)
-      .deleteOne({ _id: toObjectId(workbookId) });
+      .deleteOne({ _id: new ObjectId(workbookId) });
     return result.deletedCount > 0;
   }
 

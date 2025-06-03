@@ -4,7 +4,7 @@ import EventModel from "@/db/models/EventModel";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ eventId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { userId, role = "viewer" } = await request.json();
@@ -16,21 +16,19 @@ export async function POST(
       );
     }
 
-    const { eventId: eventSlugOrId } = await params;
+    const { slug } = await params;
 
     // Check if event exists and get the actual event with ObjectId
-    const event = await EventModel.getBySlugOrId(eventSlugOrId);
+    const event = await EventModel.getBySlugOrId(slug);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Get the actual ObjectId as string
     const eventId = event._id?.toString();
     if (!eventId) {
       return NextResponse.json({ error: "Invalid event ID" }, { status: 400 });
     }
 
-    // Check if event is open for joining
     if (event.status !== "open") {
       return NextResponse.json(
         { error: "Event is not open for joining" },
@@ -38,7 +36,6 @@ export async function POST(
       );
     }
 
-    // Check if user is already joined
     const isAlreadyJoined = await UserEventModel.isUserJoinedEvent(
       userId,
       eventId
@@ -50,7 +47,6 @@ export async function POST(
       );
     }
 
-    // Join the event
     const userEvent = await UserEventModel.joinEvent(userId, eventId, role);
 
     return NextResponse.json({
@@ -68,7 +64,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ eventId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { userId } = await request.json();
@@ -80,10 +76,10 @@ export async function DELETE(
       );
     }
 
-    const { eventId: eventSlugOrId } = await params;
+    const { slug } = await params;
 
     // Check if event exists and get the actual event with ObjectId
-    const event = await EventModel.getBySlugOrId(eventSlugOrId);
+    const event = await EventModel.getBySlugOrId(slug);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
@@ -127,7 +123,7 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ eventId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
@@ -140,10 +136,10 @@ export async function GET(
       );
     }
 
-    const { eventId: eventSlugOrId } = await params;
+    const { slug } = await params;
 
     // Check if event exists and get the actual event with ObjectId
-    const event = await EventModel.getBySlugOrId(eventSlugOrId);
+    const event = await EventModel.getBySlugOrId(slug);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
@@ -172,99 +168,3 @@ export async function GET(
     );
   }
 }
-
-// import { getDb } from "@/lib/mongodb";
-// import { ObjectId } from "mongodb";
-// import { NextResponse } from "next/server";
-// import { Event } from "@/types/event";
-
-// export async function GET(
-//   request: Request,
-//   { params }: { params: Promise<{ id: string }> }
-// ) {
-//   const resolvedParams = await params;
-//   const id = resolvedParams.id;
-
-//   const db = await getDb();
-
-//   try {
-//     const event = await db
-//       .collection<Event>("events")
-//       .findOne({ _id: new ObjectId(id) });
-//     if (!event) {
-//       return NextResponse.json(
-//         { error: "Event tidak ditemukan" },
-//         { status: 404 }
-//       );
-//     }
-//     // Konversi _id ke string untuk response
-//     return NextResponse.json({ ...event, _id: event._id.toString() });
-//   } catch (error) {
-//     console.error("Error fetching event:", error);
-//     return NextResponse.json(
-//       { error: "Gagal mengambil event" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// export async function PUT(
-//   request: Request,
-//   { params }: { params: Promise<{ id: string }> }
-// ) {
-//   const resolvedParams = await params;
-//   const id = resolvedParams.id;
-
-//   const data = await request.json();
-//   const {
-//     title,
-//     description,
-//     location,
-//     startDate,
-//     endDate,
-//     startTime,
-//     endTime,
-//     typeEvent,
-//     status,
-//     targetFunding,
-//     currentFunding,
-//   } = data;
-
-//   if (!title) {
-//     return NextResponse.json({ error: "Title diperlukan" }, { status: 400 });
-//   }
-
-//   const db = await getDb();
-//   const updateData: Partial<Event> = {
-//     title,
-//     description: description || "",
-//     location: location || "",
-//     startDate: startDate ? new Date(startDate) : undefined,
-//     endDate: endDate ? new Date(endDate) : undefined,
-//     startTime: startTime || "",
-//     endTime: endTime || "",
-//     typeEvent: typeEvent || "",
-//     status: status || undefined,
-//     targetFunding: targetFunding || undefined,
-//     currentFunding: currentFunding || undefined,
-//   };
-
-//   try {
-//     const result = await db
-//       .collection<Event>("events")
-//       .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
-//     if (result.matchedCount === 0) {
-//       return NextResponse.json(
-//         { error: "Event tidak ditemukan" },
-//         { status: 404 }
-//       );
-//     }
-//     return NextResponse.json({ message: "Event berhasil diperbarui" });
-//   } catch (error) {
-//     console.error("Error updating event:", error);
-//     return NextResponse.json(
-//       { error: "Gagal memperbarui event" },
-//       { status: 500 }
-//     );
-//   }
-// }

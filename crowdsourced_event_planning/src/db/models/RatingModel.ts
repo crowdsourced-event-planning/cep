@@ -1,6 +1,5 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
-import { createObjectId } from "../utils/validateObjectId";
 
 export interface IRating {
   _id?: ObjectId;
@@ -28,7 +27,7 @@ export class RatingModel {
 
     const now = new Date();
     const ratingData: IRating = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       eventId: data.eventId!,
       userId: data.userId!,
       score: data.score!,
@@ -40,6 +39,7 @@ export class RatingModel {
     const result = await collection.insertOne(ratingData);
     return { ...ratingData, _id: result.insertedId };
   }
+
   static async getAverageRatingByEventId(eventId: string): Promise<number> {
     const db = await getDb();
     const collection = db.collection<IRating>(this.COLLECTION_NAME);
@@ -53,6 +53,7 @@ export class RatingModel {
 
     return result.length > 0 ? Number(result[0].average.toFixed(1)) : 0;
   }
+
   static async hasUserRatedEvent(
     userId: string,
     eventId: string

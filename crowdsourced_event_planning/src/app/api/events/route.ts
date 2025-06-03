@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createEvent, getEventById } from "@/lib/data/event";
 import { getDb } from "@/lib/mongodb";
-import { Event } from "@/types/event";
+import { ObjectId } from "mongodb";
+import Event from "@/db/models/EventModel";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -90,10 +91,10 @@ export async function POST(request: Request) {
       targetFunding: Number(data.targetFunding) || 0,
       currentFunding: 0,
       status: data.status || "open",
-      creator: data.creator,
+      creator: new ObjectId(userId),
       budget: data.budget || [],
-      gallery: [],
-      documents: [],
+      gallery: data.gallery || [],
+      documents: data.documents || [],
       cancelReason: "",
     };
 

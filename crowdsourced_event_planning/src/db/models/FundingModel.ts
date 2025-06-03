@@ -1,6 +1,5 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
-import { createObjectId } from "../utils/validateObjectId";
 
 export interface IFunding {
   _id?: ObjectId;
@@ -34,7 +33,7 @@ export class FundingModel {
 
     const now = new Date();
     const fundingData: IFunding = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       eventId: data.eventId!,
       userId: data.userId!,
       amount: data.amount!,
@@ -45,6 +44,7 @@ export class FundingModel {
     const result = await collection.insertOne(fundingData);
     return { ...fundingData, _id: result.insertedId };
   }
+
   static async getTotalFundingByEventId(eventId: string): Promise<number> {
     const db = await getDb();
     const collection = db.collection<IFunding>(this.COLLECTION_NAME);

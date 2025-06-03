@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/button";
+import { toast } from "react-hot-toast";
 
 interface CreateWorkbookButtonProps {
   eventId: string;
@@ -27,7 +28,7 @@ export default function CreateWorkbookButton({
 
   const handleCreateWorkbook = async () => {
     if (!workbookName.trim()) {
-      alert("Please enter a workbook name");
+      toast.error("Please enter a workbook name");
       return;
     }
 
@@ -51,22 +52,18 @@ export default function CreateWorkbookButton({
 
       const result = await response.json();
 
-      // Close dialog and reset form
       setIsDialogOpen(false);
       setWorkbookName("");
       setWorkbookDescription("");
+      toast.success("Workbook created successfully!");
 
-      // Show success message
-      alert("Workbook created successfully!");
+      // Redirect ke slug, bukan _id
+      router.push(`/event/${eventId}/workbook/${result.workbook.slug}`);
 
-      // Redirect to the new workbook
-      router.push(`/event/${eventId}/workbook/${result.workbook._id}`);
-
-      // Refresh the page to show the new workbook in the list
       router.refresh();
     } catch (error) {
       console.error("Error creating workbook:", error);
-      alert(
+      toast.error(
         error instanceof Error ? error.message : "Failed to create workbook"
       );
     } finally {
@@ -88,7 +85,10 @@ export default function CreateWorkbookButton({
 
       {/* Simple Modal Dialog */}
       {isDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+        >
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h2 className="text-xl font-bold mb-4">Create New Workbook</h2>
 

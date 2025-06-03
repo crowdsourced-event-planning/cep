@@ -52,10 +52,10 @@ export default async function HomePage() {
             </p>
             <div className="space-x-4">
               <a
-                href="/register"
+                href="/create"
                 className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                Get Started
+                Start a Project
               </a>
               <a
                 href="/events"
@@ -104,7 +104,6 @@ export default async function HomePage() {
                   key={event._id?.toString() || ""}
                   event={{
                     ...event,
-                    _id: event._id?.toString() || "",
                     createdAt: event.createdAt || new Date(),
                     updatedAt: event.updatedAt || new Date(),
                   }}
@@ -167,7 +166,7 @@ export default async function HomePage() {
             Launch your idea and find your community on Collabora.
           </p>
           <a
-            href="/events/create"
+            href="/create"
             className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
           >
             Start a Project

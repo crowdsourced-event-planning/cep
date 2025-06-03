@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Task } from "@/types/task";
 import Link from "next/link";
+import type { ITask } from "@/db/models/TaskModel"; // gunakan interface dari TaskModel
 
 // Add refreshTasks to the Window interface
 declare global {
@@ -13,14 +13,16 @@ declare global {
 
 interface AutoRefreshTaskListProps {
   workbookId: string;
-  eventId: string;
+  eventSlug: string;
+  workbookSlug: string;
 }
 
 export default function AutoRefreshTaskList({
   workbookId,
-  eventId,
+  eventSlug,
+  workbookSlug,
 }: AutoRefreshTaskListProps) {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<ITask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -87,9 +89,9 @@ export default function AutoRefreshTaskList({
       {tasks.length > 0 ? (
         <ul className="list-disc pl-5">
           {tasks.map((task) => (
-            <li key={task._id.toString()}>
+            <li key={task._id?.toString()}>
               <Link
-                href={`/event/${eventId}/workbook/${workbookId}/task/${task._id.toString()}`}
+                href={`/event/${eventSlug}/workbook/${workbookSlug}/task/${task.slug}`}
                 className="text-blue-600 hover:underline"
               >
                 {task.name} {task.parentTask ? "(Subtask)" : ""}
