@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Image from "next/image";
 import { getAllEvents } from "@/lib/data/event";
 import EventCard from "@/components/EventCard";
 
@@ -16,25 +17,23 @@ export const metadata: Metadata = {
   },
 };
 
-// Fungsi fetch gambar acak dari Pixabay
-async function getRandomEventImage() {
-  const apiKey = process.env.PIXABAY_API_KEY;
-  const query = "event crowd concert festival party";
-  const url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(
-    query
-  )}&image_type=photo&orientation=horizontal&safesearch=true&per_page=20`;
-  const res = await fetch(url, { cache: "no-store" });
-  const data = await res.json();
-  if (data.hits && data.hits.length > 0) {
-    const randomIdx = Math.floor(Math.random() * data.hits.length);
-    return data.hits[randomIdx].webformatURL;
-  }
-  return "/default-hero.jpg"; // fallback jika gagal
+// Static hero images for better performance and SSG compatibility
+function getRandomEventImage() {
+  const staticImages = [
+    "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+  ];
+
+  // Use a consistent image for static generation, or implement client-side randomization
+  return staticImages[0]; // Using first image for consistency in build
 }
 
 export default async function HomePage() {
   const events = await getAllEvents();
-  const heroImage = await getRandomEventImage();
+  const heroImage = getRandomEventImage();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -65,9 +64,11 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="md:w-1/2 flex justify-center">
-            <img
+            <Image
               src={heroImage}
               alt="Event Crowd"
+              width={600}
+              height={400}
               className="w-full max-w-md rounded-xl shadow-lg"
             />
           </div>

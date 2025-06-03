@@ -1,16 +1,23 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Card from "./ui/card";
 import Button from "./ui/button";
 import { formatDate, formatCurrency } from "@/lib/utils/formatDate";
 import { Event } from "../../types/event";
+import { getCurrentUser } from "@/lib/auth-client";
+import Swal from "sweetalert2";
 
 interface EventCardProps {
   event: Event;
   showJoinButton?: boolean;
   onJoinEvent?: (eventId: string) => void;
   isJoined?: boolean;
+  showActions?: boolean;
+  isCreator?: boolean;
 }
 
 export default function EventCard({
@@ -18,7 +25,72 @@ export default function EventCard({
   showJoinButton = true,
   onJoinEvent,
   isJoined = false,
+  showActions = false,
+  isCreator = false,
 }: EventCardProps) {
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsDeleting(true);
+    try {
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        throw new Error("You must be logged in to delete an event");
+      }
+
+      const response = await fetch(`/api/events/${event._id}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-id": currentUser._id,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete event");
+      }
+
+      await Swal.fire("Deleted!", "The event has been deleted.", "success");
+
+      router.refresh();
+      router.push("/events");
+    } catch (error: unknown) {
+      console.error("Error deleting event:", error);
+      if (error instanceof Error) {
+        Swal.fire(
+          "Error!",
+          error.message || "Failed to delete event. Please try again.",
+          "error"
+        );
+      } else {
+        Swal.fire(
+          "Error!",
+          "Failed to delete event. Please try again.",
+          "error"
+        );
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEdit = () => {
+    router.push(`/events/${event._id}/edit`);
+  };
+
   const fundingPercentage =
     event.targetFunding > 0
       ? Math.min((event.currentFunding / event.targetFunding) * 100, 100)
@@ -115,6 +187,27 @@ export default function EventCard({
             </Button>
           )}
         </div>
+        {showActions && isCreator && (
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button
+              onClick={handleEdit}
+              variant="secondary"
+              size="sm"
+              className="w-20"
+            >
+              Edit
+            </Button>
+            <Button
+              onClick={handleDelete}
+              variant="danger"
+              size="sm"
+              className="w-20"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "..." : "Delete"}
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );

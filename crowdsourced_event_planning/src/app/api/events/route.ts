@@ -16,7 +16,7 @@ export async function GET(request: Request) {
           { status: 404 }
         );
       }
-      return NextResponse.json({ ...event, _id: event._id.toString() });
+      return NextResponse.json({ ...event, _id: event._id?.toString() });
     } else {
       const db = await getDb();
       const events = await db.collection<Event>("events").find().toArray();

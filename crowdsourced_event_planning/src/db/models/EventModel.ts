@@ -78,11 +78,32 @@ export default class EventModel {
     return event;
   }
 
+  private static validateEventData(data: Partial<IEvent>): void {
+    if (data.startDate && data.endDate) {
+      if (new Date(data.startDate) > new Date(data.endDate)) {
+        throw new Error("End date must be after start date");
+      }
+    }
+
+    if (data.targetFunding && data.targetFunding < 0) {
+      throw new Error("Target funding cannot be negative");
+    }
+
+    if (
+      data.status &&
+      !["draft", "open", "closed", "cancelled"].includes(data.status)
+    ) {
+      throw new Error("Invalid event status");
+    }
+  }
+
   static async update(
     id: string,
     data: Partial<IEvent>
   ): Promise<IEvent | null> {
     validateObjectId(id, "Event ID");
+    this.validateEventData(data);
+
     const db = await getDb();
 
     const updateData = {
