@@ -7,9 +7,7 @@ import {
   getAverageRatingByEventId,
 } from "@/lib/data/rating";
 import Card from "@/components/ui/card";
-import Button from "@/components/ui/button";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
-import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
 import CreateWorkbookButton from "@/components/client/CreateWorkbookButton";
 import WorkbookListClient from "@/components/client/WorkbookListClient";
@@ -17,7 +15,8 @@ import { cookies } from "next/headers";
 import { UserEventModel } from "@/db/models/UserEventModel";
 import ShareEventButton from "@/components/client/ShareEventButton";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import EventGalleryWithDocs from "@/components/Gallery";
+import EventGalleryWithModal from "@/components/client/EventGalleryWithModal";
+import EventActions from "@/components/client/EventActions"; // Buat komponen ini
 
 interface EventPageProps {
   params: Promise<{
@@ -59,7 +58,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     }
 
     const eventId = event._id?.toString() || "";
-    const [workbooks, ratings, averageRating] = await Promise.all([
+    const [workbooks] = await Promise.all([
       getWorkbooksByEventId(eventId),
       getRatingsByEventId(eventId),
       getAverageRatingByEventId(eventId),
@@ -85,12 +84,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6 cursor-pointer">
               {/* Event Gallery & Documents */}
               {(event.gallery?.length > 0 || event.documents?.length > 0) && (
                 <Card>
-                  <div className="p-4">
-                    <EventGalleryWithDocs
+                  <div className="p-4 cursor-pointer">
+                    <EventGalleryWithModal
                       images={event.gallery}
                       documents={event.documents}
                     />
@@ -181,7 +180,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       </h2>
                       {isCreator && (
                         <>
-                          <CreateWorkbookButton eventId={event.slug} size="sm">
+                          <CreateWorkbookButton
+                            eventId={event.slug}
+                            size="sm"
+                            className="cursor-pointer"
+                          >
                             Create Workbook
                           </CreateWorkbookButton>
                         </>
@@ -192,7 +195,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                         <p className="text-gray-500">
                           No workbooks created yet.
                         </p>
-                        {isCreator && (
+                        {/* {isCreator && (
                           <CreateWorkbookButton
                             eventId={event.slug}
                             size="sm"
@@ -200,7 +203,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                           >
                             Create First Workbook
                           </CreateWorkbookButton>
-                        )}
+                        )} */}
                       </div>
                     ) : (
                       <WorkbookListClient
@@ -244,19 +247,19 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               {/* Event Actions */}
               <Card>
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">Actions</h3>{" "}
-                  {isCreator ? (
-                    <div className="text-green-600 font-semibold text-center py-2">
-                      You are the creator of this event.
-                    </div>
-                  ) : (
-                    <JoinEventButtonWrapper
-                      eventId={event.slug}
-                      eventStatus={event.status}
-                      initialIsJoined={!!isJoined}
-                      className="w-full"
-                    />
-                  )}
+                  <h3 className="text-lg font-semibold">Actions</h3>
+                  <EventActions
+                    isCreator={isCreator}
+                    event={{
+                      ...event,
+                      _id: event._id?.toString() || "",
+                      creator:
+                        event.creator?.toString?.() || event.creator || "",
+                      // tambahkan field lain jika perlu
+                      // hindari passing object MongoDB/Buffer
+                    }}
+                    isJoined={isJoined}
+                  />
                   <ShareEventButton
                     url={`${process.env.NEXT_PUBLIC_BASE_URL}/event/${event.slug}`}
                   />
@@ -271,7 +274,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                   </div>
                 </div>
               </Card>
-              {/* Ratings */}
+              {/* Ratings
               <Card>
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Community Rating</h3>
@@ -305,7 +308,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                     Write Review
                   </Button>
                 </div>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </div>

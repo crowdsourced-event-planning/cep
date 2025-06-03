@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { getAllEvents } from "@/lib/data/event";
 import EventCard from "@/components/EventCard";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Collabora - Crowdsourced Event Planning Platform",
@@ -36,6 +37,8 @@ async function getRandomEventImage() {
 export default async function HomePage() {
   const events = await getAllEvents();
   const heroImage = await getRandomEventImage();
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("x-user-id")?.value || "";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -102,11 +105,8 @@ export default async function HomePage() {
               {events.slice(0, 8).map((event) => (
                 <EventCard
                   key={event._id?.toString() || ""}
-                  event={{
-                    ...event,
-                    createdAt: event.createdAt || new Date(),
-                    updatedAt: event.updatedAt || new Date(),
-                  }}
+                  event={event}
+                  currentUserId={userId}
                   showJoinButton={true}
                 />
               ))}

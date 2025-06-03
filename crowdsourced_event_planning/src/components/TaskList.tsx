@@ -60,7 +60,7 @@ export default function TaskList({ tasks, onSelectTask }: TaskListProps) {
 
               <p className="text-gray-600 text-sm">{task.description}</p>
 
-              <div className="flex justify-between items-center text-xs text-gray-500">
+              <div className="flex justify-between items-center text-xs text-gray-500 cursor-pointer">
                 <span>
                   Assigned to:{" "}
                   {Array.isArray(task.assignedTo) ? task.assignedTo.length : 0}{" "}

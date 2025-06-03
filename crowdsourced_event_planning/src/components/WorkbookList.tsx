@@ -67,6 +67,7 @@ export default function WorkbookList({
                   <Button
                     variant="secondary"
                     size="sm"
+                    className="cursor-pointer"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       setSelectedWorkbook(workbook);
@@ -78,6 +79,7 @@ export default function WorkbookList({
                   <Button
                     variant="danger"
                     size="sm"
+                    className="cursor-pointer"
                     onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       if (

@@ -4,6 +4,7 @@ import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import Event from "@/db/models/EventModel";
 
+// Untuk GET semua event atau POST event baru
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("id");
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
     const eventData = {
       title: data.title,
       description: data.description,
+      category: data.category,
       location: data.location,
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),

@@ -3,13 +3,17 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, FileDown } from "lucide-react";
 
+type Props = {
+  images: string[];
+  documents: string[];
+  onImageClick?: (idx: number) => void;
+};
+
 export default function EventGalleryWithDocs({
   images,
   documents,
-}: {
-  images: string[];
-  documents: string[];
-}) {
+  onImageClick,
+}: Props) {
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
 
@@ -32,7 +36,7 @@ export default function EventGalleryWithDocs({
       {images.length > 0 && (
         <div className="relative flex items-center justify-center">
           <button
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 z-10"
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 z-10 cursor-pointer"
             onClick={handlePrev}
             aria-label="Prev"
           >
@@ -48,11 +52,12 @@ export default function EventGalleryWithDocs({
               alt={`Event Image ${current + 1}`}
               width={600}
               height={400}
-              className="rounded-lg object-cover max-h-80"
+              className="rounded-lg object-cover max-h-80 cursor-pointer"
+              onClick={() => onImageClick?.(current)}
             />
           </div>
           <button
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 z-10"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 z-10 cursor-pointer"
             onClick={handleNext}
             aria-label="Next"
           >
@@ -62,7 +67,7 @@ export default function EventGalleryWithDocs({
       )}
       {/* Thumbnail List */}
       {images.length > 1 && (
-        <div className="flex gap-2 mt-2 justify-center">
+        <div className="flex gap-2 mt-2 justify-center cursor-pointer">
           {images.map((img, idx) => (
             <button
               key={img}
@@ -76,7 +81,7 @@ export default function EventGalleryWithDocs({
                 alt=""
                 width={60}
                 height={60}
-                className="object-cover rounded"
+                className="object-cover rounded cursor-pointer"
               />
             </button>
           ))}

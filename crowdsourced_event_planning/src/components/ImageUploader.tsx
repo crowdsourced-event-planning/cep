@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { useState } from "react";
-import ImageModal from "./ImageModel";
+import { useRef, useState } from "react";
+import ImageModal from "./ImageModal";
 import {
   DragDropContext,
   Droppable,
@@ -8,7 +8,8 @@ import {
   DropResult,
 } from "@hello-pangea/dnd";
 import toast from "react-hot-toast";
-import { X } from "lucide-react";
+import { X, Upload } from "lucide-react";
+import Button from "@/components/ui/button";
 
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
@@ -16,13 +17,17 @@ const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 export default function ImageUploader({
   images,
   setImages,
+  setUploading, // <-- tambahkan prop ini
 }: {
   images: string[];
   setImages: (urls: string[]) => void;
+  setUploading?: (v: boolean) => void; // optional
 }) {
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploadingLocal] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     let files = Array.from(e.target.files || []);
@@ -37,25 +42,43 @@ export default function ImageUploader({
 
     if (files.length === 0) return;
 
-    setUploading(true);
+    setUploadingLocal(true);
+    setUploading?.(true); // notify parent
+    setProgress(0);
+
     const uploaded: string[] = [];
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const xhr = new XMLHttpRequest();
+      xhr.open(
+        "POST",
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+      );
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          setProgress(
+            Math.round(((i + event.loaded / event.total) / files.length) * 100)
+          );
+        }
+      };
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_preset", uploadPreset ?? "");
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        { method: "POST", body: formData }
-      );
-      const data = await res.json();
-      if (!data.secure_url) {
+      const res = await new Promise<{ secure_url?: string }>((resolve) => {
+        xhr.onload = () => resolve(JSON.parse(xhr.responseText));
+        xhr.send(formData);
+      });
+      if (!res.secure_url) {
         toast.error("Gagal upload gambar!");
         continue;
       }
-      uploaded.push(data.secure_url);
+      uploaded.push(res.secure_url);
     }
     setImages([...images, ...uploaded]);
-    setUploading(false);
+    setUploadingLocal(false);
+    setUploading?.(false);
+    setProgress(0);
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handleRemove = (idx: number) => {
@@ -73,13 +96,39 @@ export default function ImageUploader({
 
   return (
     <div>
+      <div className="flex items-center gap-3 mb-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading || images.length >= 5}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <Upload className="w-4 h-4" />
+          Pilih Gambar
+        </Button>
+        <span className="text-xs text-gray-500">
+          {images.length}/5 gambar dipilih
+        </span>
+      </div>
       <input
+        ref={inputRef}
         type="file"
         accept="image/*"
         multiple
         disabled={uploading || images.length >= 5}
         onChange={handleUpload}
+        className="hidden"
       />
+      {uploading && (
+        <div className="w-full bg-gray-200 rounded h-2 mb-2 overflow-hidden">
+          <div
+            className="bg-green-500 h-2 transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="gallery" direction="horizontal">
           {(provided) => (
@@ -139,7 +188,7 @@ export default function ImageUploader({
           )}
         </Droppable>
       </DragDropContext>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-500 mt-2">
         Maksimal 5 gambar. Drag & drop untuk urutkan. Klik gambar untuk preview.
       </p>
       {modalOpen && (

@@ -17,7 +17,8 @@ export default function JoinEventButtonWrapper({
   eventStatus,
   className = "",
   initialIsJoined = false,
-}: JoinEventButtonWrapperProps) {
+  stopPropagation = true, // default true
+}: JoinEventButtonWrapperProps & { stopPropagation?: boolean }) {
   const [isJoined, setIsJoined] = useState(initialIsJoined);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
@@ -163,14 +164,28 @@ export default function JoinEventButtonWrapper({
   }
 
   return (
-    <Button
-      onClick={isJoined ? handleLeaveEvent : handleJoinEvent}
-      variant={isJoined ? "secondary" : "success"}
-      disabled={loading}
-      loading={loading}
+    <div
       className={className}
+      {...(stopPropagation && {
+        onClick: (e) => e.stopPropagation(),
+      })}
     >
-      {isJoined ? "Leave Event" : "Join Event"}
-    </Button>
+      <Button
+        onClick={(e) => {
+          e.preventDefault(); // <-- ini penting!
+          if (isJoined) {
+            handleLeaveEvent();
+          } else {
+            handleJoinEvent();
+          }
+        }}
+        variant={isJoined ? "secondary" : "success"}
+        disabled={loading}
+        loading={loading}
+        className={className}
+      >
+        {isJoined ? "Leave Event" : "Join Event"}
+      </Button>
+    </div>
   );
 }

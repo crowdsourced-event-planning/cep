@@ -32,6 +32,7 @@ interface TaskBoardProps {
   refreshTasks?: () => void;
   isCreator: boolean;
   userId: string;
+  canAssign?: boolean; // tambahkan
 }
 
 export default function TaskBoard({
@@ -39,6 +40,7 @@ export default function TaskBoard({
   eventId,
   isCreator,
   userId,
+  canAssign = false,
 }: TaskBoardProps) {
   const [columns, setColumns] = useState<Record<string, SerializedTask[]>>({});
   const [participants, setParticipants] = useState<IUser[]>([]);
@@ -105,6 +107,7 @@ export default function TaskBoard({
   };
 
   const handleAssign = async (task: SerializedTask, userId: string) => {
+    if (!canAssign) return; // hanya creator yang bisa assign
     await updateTaskAPI(task._id!.toString(), {
       assignedTo: [userId],
     });
@@ -157,6 +160,7 @@ export default function TaskBoard({
                       draggableId={task._id!.toString()}
                       index={idx}
                       isDragDisabled={
+                        // Hanya assignee (task.assignedTo[0] === userId) atau creator yang bisa drag
                         task.assignedTo?.[0]?.toString() !== userId &&
                         !isCreator
                       }
@@ -172,16 +176,19 @@ export default function TaskBoard({
                         >
                           <div className="flex justify-between items-center mb-2">
                             <div className="font-semibold">{task.name}</div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteTaskId(task._id);
-                              }}
-                              className="text-red-500 hover:text-red-700 p-1"
-                              title="Hapus Task"
-                            >
-                              <Trash className="w-4 h-4 cursor-pointer" />
-                            </button>
+                            {(isCreator ||
+                              task.assignedTo?.[0]?.toString() === userId) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteTaskId(task._id);
+                                }}
+                                className="text-red-500 hover:text-red-700 p-1"
+                                title="Hapus Task"
+                              >
+                                <Trash className="w-4 h-4 cursor-pointer" />
+                              </button>
+                            )}
                           </div>
                           <div className="text-xs text-gray-500 mb-2">
                             {task.description}
@@ -192,8 +199,10 @@ export default function TaskBoard({
                             <Select
                               value={task.assignedTo?.[0] || ""}
                               onValueChange={(value) => {
-                                if (value) handleAssign(task, value);
+                                if (canAssign && value)
+                                  handleAssign(task, value);
                               }}
+                              disabled={!canAssign}
                             >
                               <SelectTrigger className="w-[140px]">
                                 <SelectValue placeholder="Pilih" />
@@ -233,13 +242,13 @@ export default function TaskBoard({
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteTaskId(null)}
-                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 cursor-pointer"
               >
                 Batal
               </button>
               <button
                 onClick={() => handleDelete(deleteTaskId)}
-                className="px-4 py-2 rounded bg-red-500 hover:bg-red-600 text-white"
+                className="px-4 py-2 rounded bg-red-500 hover:bg-red-600 text-white cursor-pointer"
               >
                 Hapus
               </button>

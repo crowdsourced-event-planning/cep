@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { getCurrentUser } from "@/lib/auth-client"; // Tambahkan ini
+import { getCurrentUser } from "@/lib/auth-client";
 
 interface TaskFormProps {
   workbookId: string;
   refreshTasks?: () => void;
+  isCreator?: boolean;
+  isApprovedPanitia?: boolean;
+  userId?: string;
 }
 
 // Extend Window interface to include our refreshTasks function
@@ -15,7 +18,12 @@ declare global {
   }
 }
 
-export default function TaskForm({ workbookId, refreshTasks }: TaskFormProps) {
+export default function TaskForm({
+  workbookId,
+  refreshTasks,
+  isCreator,
+  userId,
+}: TaskFormProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,23 +45,23 @@ export default function TaskForm({ workbookId, refreshTasks }: TaskFormProps) {
         setIsSubmitting(false);
         return;
       }
-      const userId = user._id;
+      const currentUserId = user._id;
+
+      const payload = {
+        workbookId,
+        name,
+        description,
+        status: "pending",
+        assignedTo: isCreator ? [currentUserId] : [userId],
+      };
 
       const response = await fetch("/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId,
+          "x-user-id": currentUserId, // <-- wajib!
         },
-        body: JSON.stringify({
-          workbookId,
-          name,
-          description,
-          status: "pending",
-          // assignedTo: [userId], // Hapus jika tidak perlu
-          dueDate: new Date().toISOString(),
-          customColumn: [],
-        }),
+        body: JSON.stringify(payload),
       });
       if (response.ok) {
         setName("");
@@ -81,8 +89,21 @@ export default function TaskForm({ workbookId, refreshTasks }: TaskFormProps) {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name.trim()) {
+      setError("Nama task tidak boleh kosong");
+      return;
+    }
+
+    setError("");
+
+    addTask();
+  };
+
   return (
-    <div className="flex flex-col gap-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
       <input
         type="text"
         value={name}
@@ -102,12 +123,12 @@ export default function TaskForm({ workbookId, refreshTasks }: TaskFormProps) {
       />
       {error && <p className="text-red-500 text-sm">{error}</p>}
       <button
-        onClick={addTask}
+        type="submit"
         className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors disabled:bg-blue-300 cursor-pointer"
         disabled={isSubmitting}
       >
         {isSubmitting ? "Menambahkan..." : "Tambah Task"}
       </button>
-    </div>
+    </form>
   );
 }

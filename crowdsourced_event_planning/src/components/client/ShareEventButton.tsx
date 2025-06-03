@@ -20,7 +20,11 @@ export default function ShareEventButton({ url }: { url: string }) {
   };
 
   return (
-    <Button variant="secondary" onClick={handleShare} className="w-full">
+    <Button
+      variant="secondary"
+      onClick={handleShare}
+      className="w-full cursor-pointer"
+    >
       {" "}
       {copied ? "Link Copied!" : "Share Event"}
     </Button>

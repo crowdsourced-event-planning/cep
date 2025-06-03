@@ -1,8 +1,13 @@
+import { cookies } from "next/headers";
 import { getAllEvents } from "@/lib/data/event";
 import EventCard from "@/components/EventCard";
+export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
   const events = await getAllEvents();
+
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("x-user-id")?.value || "";
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -14,11 +19,8 @@ export default async function EventsPage() {
           {events.map((event) => (
             <EventCard
               key={event._id?.toString() || ""}
-              event={{
-                ...event,
-                createdAt: event.createdAt || new Date(),
-                updatedAt: event.updatedAt || new Date(),
-              }}
+              event={event}
+              currentUserId={userId}
               showJoinButton={true}
             />
           ))}

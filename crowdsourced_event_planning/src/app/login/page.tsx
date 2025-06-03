@@ -4,8 +4,8 @@ import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import doLogin from "./action";
-import Swal from "sweetalert2";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "react-hot-toast";
 
 export interface IInputLogin {
   email: string;
@@ -20,43 +20,28 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, refreshAuth } = useAuth();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    console.log("Form submitted with input:", input);
 
     try {
       const result = await doLogin(input);
 
       if (result && !result.success) {
-        Swal.fire({
-          icon: "error",
-          title: "Login Failed!",
-          text: result.message,
-          confirmButtonColor: "#3b82f6",
-        });
+        toast.error(result.message || "Login Failed!");
       } else if (result && result.success) {
-        // Update auth context immediately
         login();
-
-        // Force refresh auth state to ensure navbar updates
         setTimeout(() => {
           refreshAuth();
         }, 100);
-        await Swal.fire({
-          icon: "success",
-          title: "Login Success!",
-          text: "Redirecting...",
-          showConfirmButton: false,
-          timer: 1500,
-        });
-
-        // Check for callback URL and redirect accordingly
-        const callbackUrl = searchParams.get("callbackUrl");
-        router.push(callbackUrl || "/");
+        toast.success("Login Success! Redirecting...");
+        setTimeout(() => {
+          const callbackUrl = searchParams.get("callbackUrl");
+          router.push(callbackUrl || "/");
+        }, 800);
       }
-    } catch (err) {
-      console.log(err);
+    } catch {
+      toast.error("Terjadi kesalahan. Silakan coba lagi.");
     }
   };
 

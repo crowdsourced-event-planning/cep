@@ -3,6 +3,8 @@ import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import type { ITask } from "@/db/models/TaskModel"; // Ganti import tipe
 import slugify from "slugify";
+import { getEventById } from "@/lib/data/event";
+import { getPanitiaRequestByUserAndWorkbook } from "@/lib/data/panitiaRequest";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -90,24 +92,19 @@ export async function POST(request: Request) {
 
   console.log(`Looking for event with ID: ${eventId}`);
 
-  const event = await db.collection("events").findOne({ _id: eventId });
+  const event = await getEventById(eventId);
 
-  if (!event) {
-    console.log(`Event tidak ditemukan untuk eventId: ${eventId}`);
-    return NextResponse.json(
-      { error: "Event tidak ditemukan untuk workbook ini" },
-      { status: 404 }
-    );
-  }
-
-  console.log(`Event ditemukan: ${JSON.stringify(event)}`);
-  console.log(
-    `Membandingkan event.creator: ${event.creator} dengan userId: ${userId}`
+  // Cek apakah user adalah creator atau panitia approved
+  const isCreator = event && event.creator?.toString() === userId;
+  const panitiaRequest = await getPanitiaRequestByUserAndWorkbook(
+    eventId,
+    userId,
+    workbookId
   );
+  const isApprovedPanitia =
+    panitiaRequest && panitiaRequest.status === "approved";
 
-  // Cek otorisasi: creator ATAU peserta event
-  const isCreator = event.creator?.toString().trim() === userId.trim();
-  if (!isCreator) {
+  if (!isCreator && !isApprovedPanitia) {
     return NextResponse.json(
       { error: "Anda tidak berwenang untuk menambah task di workbook ini" },
       { status: 403 }

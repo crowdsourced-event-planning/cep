@@ -4,6 +4,8 @@ import TaskBoardWrapper from "@/components/client/TaskBoardWrapper";
 import { getTasksByWorkbookId } from "@/lib/data/task";
 import { cookies } from "next/headers";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import RequestPanitiaButton from "@/components/client/RequestPanitiaButton";
+import { getPanitiaRequestByUserAndWorkbook } from "@/lib/data/panitiaRequest";
 
 interface WorkbookPageProps {
   params: Promise<{ event: string; workbook: string }>;
@@ -43,15 +45,19 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("x-user-id")?.value || "";
 
-  // Cek apakah user adalah assignee di salah satu task
-  const isAssignee = tasksRaw.some(
-    (task) =>
-      Array.isArray(task.assignedTo) &&
-      task.assignedTo.map((id) => id?.toString()).includes(userId)
-  );
-
   // Cek apakah user adalah creator event
   const isCreator = event.creator?.toString() === userId;
+
+  // Cek apakah user sudah pernah request jadi panitia
+  const existingRequest = await getPanitiaRequestByUserAndWorkbook(
+    eventId,
+    userId,
+    workbookId
+  );
+
+  // Cek apakah user sudah di-approve
+  const isApprovedPanitia: boolean =
+    !!existingRequest && existingRequest.status === "approved";
 
   return (
     <div className="container mx-auto p-4">
@@ -78,30 +84,35 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
 
       <section className="mb-10">
         <h2 className="text-2xl font-bold mb-4">Task Board</h2>
-        {isAssignee ? (
+        {isCreator || isApprovedPanitia ? (
           <TaskBoardWrapper
-            initialTasks={tasksRaw
-              .filter((task) => !!task._id)
-              .map((task) => ({
-                ...task,
-                _id: task._id!.toString(),
-                workbookId: task.workbookId?.toString(),
-                parentTask: task.parentTask ? task.parentTask.toString() : null,
-                assignedTo: Array.isArray(task.assignedTo)
-                  ? task.assignedTo.map((id) => id?.toString())
-                  : [],
-                dueDate: task.dueDate ? task.dueDate.toISOString() : null,
-                createdAt: task.createdAt ? task.createdAt.toISOString() : null,
-                updatedAt: task.updatedAt ? task.updatedAt.toISOString() : null,
-              }))}
+            initialTasks={tasksRaw.map((task) => ({
+              ...task,
+              _id: task._id ? task._id.toString() : "",
+              workbookId: task.workbookId ? task.workbookId.toString() : "",
+              parentTask: task.parentTask ? task.parentTask.toString() : null,
+              assignedTo: Array.isArray(task.assignedTo)
+                ? task.assignedTo.map((id) => id?.toString() || "")
+                : [],
+              dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+              createdAt: task.createdAt ? task.createdAt.toISOString() : null,
+              updatedAt: task.updatedAt ? task.updatedAt.toISOString() : null,
+            }))}
             eventId={eventId}
             workbookId={workbookId}
             isCreator={isCreator}
             userId={userId}
+            isApprovedPanitia={isApprovedPanitia}
           />
         ) : (
-          <div className="text-gray-500 italic">
-            Anda tidak di-assign ke task manapun di workbook ini.
+          <div>
+            {/* Pesan dan tombol request */}
+            <RequestPanitiaButton
+              eventId={eventId}
+              userId={userId}
+              workbookId={workbookId}
+              requestStatus={existingRequest?.status}
+            />
           </div>
         )}
       </section>

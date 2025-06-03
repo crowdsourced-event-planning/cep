@@ -2,7 +2,7 @@
 import { useState } from "react";
 import TaskBoard from "@/components/TaskBoard";
 import TaskForm from "./TaskForm";
-import type { SerializedTask } from "@/types/serializedtask"; // atau dari file yang kamu buat
+import type { SerializedTask } from "@/types/serializedtask";
 
 interface TaskBoardWrapperProps {
   initialTasks: SerializedTask[];
@@ -18,7 +18,8 @@ export default function TaskBoardWrapper({
   workbookId,
   isCreator,
   userId,
-}: TaskBoardWrapperProps) {
+  isApprovedPanitia, // tambahkan jika belum ada
+}: TaskBoardWrapperProps & { isApprovedPanitia?: boolean }) {
   const [tasks, setTasks] = useState(initialTasks);
 
   // Untuk refresh setelah tambah/edit task
@@ -27,6 +28,9 @@ export default function TaskBoardWrapper({
     const data = await res.json();
     setTasks(data);
   };
+
+  // Hanya creator yang bisa assign
+  const canAssign = isCreator;
 
   return (
     <>
@@ -37,14 +41,20 @@ export default function TaskBoardWrapper({
         refreshTasks={refreshTasks}
         isCreator={isCreator}
         userId={userId}
+        canAssign={canAssign}
       />
-
-      {isCreator && (
+      {(isCreator || isApprovedPanitia) && (
         <section className="bg-white rounded-lg shadow p-6 mt-8">
           <h2 className="text-xl font-semibold mb-4 text-green-700">
             Tambah Task Baru
           </h2>
-          <TaskForm workbookId={workbookId} refreshTasks={refreshTasks} />
+          <TaskForm
+            workbookId={workbookId}
+            refreshTasks={refreshTasks}
+            isCreator={isCreator}
+            isApprovedPanitia={isApprovedPanitia}
+            userId={userId}
+          />
         </section>
       )}
     </>
