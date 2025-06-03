@@ -83,6 +83,14 @@ export default function Navbar() {
           ) : (
             <>
               <Link
+                href="/topup"
+                className={`font-medium hover:text-blue-600 transition-colors ${
+                  pathname === "/topup" ? "text-blue-600" : "text-gray-700"
+                }`}
+              >
+                Topup
+              </Link>
+              <Link
                 href="/profile"
                 className={`font-medium hover:text-blue-600 transition-colors ${
                   pathname === "/profile" ? "text-blue-600" : "text-gray-700"
@@ -148,6 +156,15 @@ export default function Navbar() {
               </Link>
             ) : (
               <>
+                <Link
+                  href="/topup"
+                  className={`font-medium py-2 hover:text-blue-600 transition-colors ${
+                    pathname === "/topup" ? "text-blue-600" : "text-gray-700"
+                  }`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Topup
+                </Link>
                 <Link
                   href="/profile"
                   className={`font-medium py-2 hover:text-blue-600 transition-colors ${

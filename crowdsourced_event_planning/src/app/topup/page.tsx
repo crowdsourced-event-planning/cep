@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import Card from "@/components/ui/card";
-import Button from "@/components/ui/button";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -12,7 +12,15 @@ export const metadata: Metadata = {
     "Create a new collaborative event and start bringing people together.",
 };
 
-export default function CreateEventPage() {
+type Props = {
+  searchParams: Promise<{
+    notif?: string;
+  }>;
+};
+
+export default async function CreateEventPage({ searchParams }: Props) {
+  const { notif } = await searchParams;
+
   const handleProcessTopup = async (formData: FormData) => {
     "use server";
 
@@ -36,7 +44,13 @@ export default function CreateEventPage() {
     );
 
     if (!res.ok) {
-      console.log(res);
+      const data = (await res.json()) as { error: string; status: number };
+
+      const message = encodeURIComponent(data.error);
+
+      return redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/topup?notif=${message}`
+      );
     }
 
     const data = await res.json();
@@ -92,6 +106,7 @@ export default function CreateEventPage() {
                       required
                       placeholder="100.000"
                       className="text-lg"
+                      error={notif}
                     />
                   </div>
                 </div>

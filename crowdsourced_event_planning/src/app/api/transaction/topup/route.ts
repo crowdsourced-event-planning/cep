@@ -3,7 +3,7 @@ import UserModel, { IUser } from "@/db/models/UserModel";
 import { verifyToken } from "@/lib/jwt";
 // import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { Invoice as InvoiceClient } from "xendit-node";
+import { Invoice as InvoiceClient, XenditSdkError } from "xendit-node";
 import { CreateInvoiceRequest, Invoice } from "xendit-node/invoice/models";
 
 export async function POST(req: NextRequest) {
@@ -85,9 +85,16 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.log(err, "<<<< error");
-    return NextResponse.json(
-      { error: "Gagal membuat invoice" },
-      { status: 500 }
-    );
+    if (err instanceof XenditSdkError) {
+      return NextResponse.json(
+        { error: err.errorMessage },
+        { status: Number(err.status) }
+      );
+    } else {
+      return NextResponse.json(
+        { error: "Gagal membuat invoice" },
+        { status: 500 }
+      );
+    }
   }
 }
