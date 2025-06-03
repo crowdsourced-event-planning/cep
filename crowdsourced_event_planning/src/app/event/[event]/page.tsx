@@ -15,6 +15,7 @@ import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
 import FundingTracker from "@/components/client/FundingTracker";
 import CreateWorkbookButton from "@/components/client/CreateWorkbookButton";
 import WorkbookListClient from "@/components/client/WorkbookListClient";
+import DonateNotification from "@/components/client/DonateNotification";
 
 interface EventPageProps {
   params: Promise<{
@@ -64,6 +65,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
     return (
       <div className="min-h-screen bg-gray-50 py-8">
+        <DonateNotification eventId={eventId} />
         <div className="container mx-auto px-4">
           {/* Event Header */}
           <div className="mb-8">
@@ -103,15 +105,14 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                         {event.title}
                       </h1>
                       <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          event.status === "open"
-                            ? "bg-green-100 text-green-800"
-                            : event.status === "closed"
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${event.status === "open"
+                          ? "bg-green-100 text-green-800"
+                          : event.status === "closed"
                             ? "bg-red-100 text-red-800"
                             : event.status === "draft"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
                       >
                         {event.status.toUpperCase()}
                       </span>
@@ -234,6 +235,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                     <Button variant="secondary" className="w-full">
                       Follow Updates
                     </Button>
+                    <Link
+                      href={`/event/${eventParam}/donation?slug=${eventParam}`}
+                    >
+                      <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                        Make a Donation
+                      </Button>
+                    </Link>
                   </div>
                 </Card>
                 {/* Event Chat */}
@@ -258,11 +266,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <svg
                             key={star}
-                            className={`w-5 h-5 ${
-                              star <= averageRating
-                                ? "text-yellow-400"
-                                : "text-gray-300"
-                            }`}
+                            className={`w-5 h-5 ${star <= averageRating
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                              }`}
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >

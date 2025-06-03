@@ -5,6 +5,9 @@ import {
   toObjectId,
   createObjectId,
 } from "../utils/validateObjectId";
+import UserModel from "./UserModel";
+import EventModel from "./EventModel";
+import { dbConnect } from "../config/mongodb";
 
 export interface ITransaction {
   _id?: ObjectId;
@@ -147,4 +150,65 @@ export class TransactionModel {
       .deleteMany(filter);
     return result.acknowledged;
   }
+
+  static async donate({
+    userId,
+    eventId,
+    amount,
+    message,
+  }: {
+    userId: string;
+    eventId: string;
+    amount: number;
+    message?: string;
+  }): Promise<ITransaction> {
+    const { db, client } = await dbConnect();
+    const session = client.startSession();
+
+    let newTransaction: ITransaction | undefined;
+
+    try {
+      await session.withTransaction(async () => {
+        const user = await UserModel.getById(userId);
+        const event = await EventModel.getById(eventId);
+        if (!user) throw new Error("User not found");
+        if (!event) throw new Error("Event not found");
+        if ((user.balance ?? 0) < amount) throw new Error("Saldo tidak cukup");
+
+        const now = new Date();
+        const transactionToInsert: ITransaction = {
+          _id: createObjectId(),
+          userId,
+          amount,
+          status: "completed",
+          type: "donation",
+          eventId,
+          description: message || "",
+          createdAt: now,
+          updatedAt: now,
+        };
+        await db
+          .collection<ITransaction>(this.COLLECTION_NAME)
+          .insertOne(transactionToInsert, { session });
+        newTransaction = transactionToInsert;
+
+        await db.collection("users").updateOne(
+          { _id: toObjectId(userId) },
+          { $inc: { balance: -amount } },
+          { session }
+        );
+
+        await db.collection("events").updateOne(
+          { _id: toObjectId(eventId) },
+          { $inc: { currentFunding: amount } },
+          { session }
+        );
+      });
+      if (!newTransaction) throw new Error("Transaction failed");
+      return newTransaction;
+    } finally {
+      await session.endSession();
+    }
+  }
+
 }
