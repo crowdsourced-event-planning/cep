@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { decodeJwt } from "jose";
 
-// Daftar path yang memerlukan role creator
-const creatorPaths = [
+// Daftar path yang memerlukan login (bukan role creator)
+const protectedPaths = [
   "/event/create",
   "/api/events/create",
   "/api/events/[id]/update",
@@ -16,10 +16,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("access_token")?.value;
   const userId = request.cookies.get("x-user-id")?.value;
-  const role = request.cookies.get("user-role")?.value;
 
   // Cek jika path butuh login
-  const needsAuth = creatorPaths.some(
+  const needsAuth = protectedPaths.some(
     (path) =>
       pathname.includes(path) ||
       pathname.startsWith("/api/workbooks") ||
@@ -32,14 +31,7 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-
-    // Cek role untuk path yang membutuhkan role creator
-    if (
-      creatorPaths.some((path) => pathname.includes(path)) &&
-      role !== "creator"
-    ) {
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
-    }
+    // HAPUS pengecekan role creator di sini!
   }
 
   const response = NextResponse.next();

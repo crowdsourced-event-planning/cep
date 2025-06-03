@@ -3,23 +3,20 @@ import UserModel, { IUser } from "@/db/models/UserModel";
 import { verifyToken } from "@/lib/jwt";
 import { NextRequest, NextResponse } from "next/server";
 import { Invoice as InvoiceClient, XenditSdkError } from "xendit-node";
-import { CreateInvoiceRequest, Invoice } from "xendit-node/invoice/models";
+import { Invoice } from "xendit-node/invoice/models";
 
 export async function POST(req: NextRequest) {
-  let amount: number;
   try {
     const secretKey = process.env.XENDIT_SECRET_KEY;
     if (!secretKey) {
       return NextResponse.json(
         { message: "Xendit secret key no found" },
-        { status: 400 }
+        { status: 500 }
       );
     }
 
     const token = req.cookies.get("access_token")?.value;
-    console.log(req.cookies, "<<< req cookies");
     if (!token) {
-      console.log("tidak ada token <<<<<<<");
       return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
     }
 
@@ -35,51 +32,43 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    amount = Number(body.amount);
-    console.log(typeof amount, "<<<<< amount");
-    if (!amount || Number(amount) <= 0) {
+    const invoiceId = body.invoiceId;
+    if (!invoiceId) {
       return NextResponse.json(
-        { message: "Amount must be positive number" },
+        { message: "Invoice ID is required" },
         { status: 400 }
       );
     }
-    console.log("pass <<<<<");
 
     const xenditInvoiceClient = new InvoiceClient({ secretKey });
 
-    const invoiceId = `invoice-${user._id}-${Date.now()}`;
-    const INVOICE_DURATION = 60 * 60 * 24 * 2;
-
-    const data: CreateInvoiceRequest = {
-      amount: amount,
-      invoiceDuration: INVOICE_DURATION,
-      externalId: invoiceId,
-      description: "Topup",
-      currency: "IDR",
-      reminderTime: 1,
-    };
-
-    console.log(secretKey, "secret key");
-    console.log(data, "<<< data");
-
-    const response: Invoice = await xenditInvoiceClient.createInvoice({
-      data,
-    });
-
-    await TransactionModel.create({
-      userId: user._id,
-      amount,
-      status: response.status,
-      type: "topup",
-      xenditId: response.id,
+    const response: Invoice = await xenditInvoiceClient.getInvoiceById({
       invoiceId,
-      invoiceUrl: response.invoiceUrl,
     });
 
-    return NextResponse.json(
-      { invoiceUrl: response.invoiceUrl },
-      { status: 200 }
-    );
+    if (!response.id || !response.status) {
+      return NextResponse.json(
+        { message: "No response from xendit" },
+        { status: 500 }
+      );
+    }
+
+    if (response.status !== "PENDING") {
+      await TransactionModel.update({
+        status: response.status,
+        xenditId: response.id,
+      });
+
+      return NextResponse.json(
+        { message: "Update transaction successful" },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        { invoiceUrl: response.invoiceUrl },
+        { status: 200 }
+      );
+    }
   } catch (err) {
     console.log(err, "<<<< error");
     if (err instanceof XenditSdkError) {

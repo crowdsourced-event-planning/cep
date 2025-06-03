@@ -114,9 +114,6 @@ export default async function CreateEventPage({ searchParams }: Props) {
 
               {/* Action Buttons */}
               <div className="flex justify-end space-x-4">
-                <Button type="button" variant="secondary">
-                  Cancel
-                </Button>
                 <Button type="submit">Process</Button>
               </div>
             </form>
@@ -124,37 +121,6 @@ export default async function CreateEventPage({ searchParams }: Props) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Tips */}
-            <Card>
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Tips for Success
-                </h3>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    Use a clear, descriptive title
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    Add high-quality images
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    Be specific about location and time
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    Set realistic funding goals
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    Provide detailed descriptions
-                  </li>
-                </ul>
-              </div>
-            </Card>
-
             {/* Help */}
             <Card>
               <div className="space-y-4">

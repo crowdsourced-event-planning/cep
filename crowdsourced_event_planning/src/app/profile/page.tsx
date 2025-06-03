@@ -1,9 +1,9 @@
 import { ObjectId } from "mongodb";
-import Link from "next/link";
 import UserModel from "@/db/models/UserModel";
 import { verifyToken } from "@/lib/jwt";
 import { getDb } from "@/db/config/mongodb";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 interface IUser {
   _id?: ObjectId;
@@ -72,9 +72,46 @@ export default async function ProfilePage() {
     .sort({ createdAt: -1 })
     .toArray();
 
-  const waitingPayments = transactions.filter((t) => t.status !== "PAID");
-  const historyTransactions = transactions.filter((t) => t.status === "PAID");
+  const waitingPayments = transactions.filter((t) => t.status === "PENDING");
+  const historyTransactions = transactions.filter(
+    (t) => t.status !== "PENDING"
+  );
 
+  const handleCheck = async (formData: FormData) => {
+    "use server";
+
+    const cookieStore = await cookies();
+    const token = cookieStore.get("access_token")?.value;
+
+    const xenditId = formData.get("xenditId");
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/transaction/topup/check`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `access_token=${token}`,
+        },
+        body: JSON.stringify({
+          invoiceId: xenditId,
+        }),
+        credentials: "include",
+      }
+    );
+
+    const data: { status: number; invoiceUrl?: string; message?: string } =
+      await res.json();
+
+    if (res.ok) {
+      if (data && data.invoiceUrl) {
+        return redirect(data.invoiceUrl);
+      } else if (data && data.message) {
+        return redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/profile`);
+      }
+    } else {
+      return redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/profile`);
+    }
+  };
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <section>
@@ -106,9 +143,12 @@ export default async function ProfilePage() {
                 <p>
                   <strong>Status:</strong> {tx.status}
                 </p>
-                <Link className="text-blue-600 underline" href={tx.invoiceUrl}>
-                  Bayar Sekarang
-                </Link>
+                <form action={handleCheck}>
+                  <input type="hidden" name="xenditId" value={tx.xenditId} />
+                  <button type="submit" className="text-blue-600 underline">
+                    Bayar Sekarang
+                  </button>
+                </form>
               </div>
             ))
           )}

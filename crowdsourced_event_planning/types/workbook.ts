@@ -4,5 +4,6 @@ export interface Workbook {
   description: string;
   eventId: string;
   createdAt: Date;
+  createdBy: string;
   updatedAt?: Date;
 }

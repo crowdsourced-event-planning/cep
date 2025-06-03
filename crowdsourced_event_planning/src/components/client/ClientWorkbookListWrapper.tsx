@@ -1,19 +1,21 @@
 // filepath: src/components/client/ClientWorkbookListWrapper.tsx
 "use client";
 
+import { useRouter } from "next/navigation";
 import WorkbookList from "@/components/WorkbookList";
-
 import type { Workbook } from "../../../types/workbook";
 
 export default function ClientWorkbookListWrapper({
   workbooks,
-  eventId,
+  eventSlug,
 }: {
   workbooks: Workbook[];
-  eventId: string;
+  eventSlug: string;
 }) {
+  const router = useRouter();
+
   const handleSelectWorkbook = (workbookId: string) => {
-    window.location.href = `/event/${eventId}/workbook/${workbookId}`;
+    router.push(`/event/${eventSlug}/workbook/${workbookId}`);
   };
 
   return (

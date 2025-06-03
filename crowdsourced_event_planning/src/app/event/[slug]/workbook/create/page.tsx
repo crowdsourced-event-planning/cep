@@ -5,32 +5,36 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 export default function CreateWorkbookPage() {
   const router = useRouter();
   const params = useParams();
-  const eventId = params?.event as string;
+  const eventSlug = params?.slug as string;
 
   const [eventTitle, setEventTitle] = useState<string>("");
+  const [eventId, setEventId] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function fetchEvent() {
-      if (!eventId) return;
+      if (!eventSlug) return;
       try {
-        const res = await fetch(`/api/events/${eventId}`);
+        const res = await fetch(`/api/events/${eventSlug}`);
         if (res.ok) {
           const data = await res.json();
+          console.log("Event data:", data); // Tambahkan ini
           setEventTitle(data.title || "Event");
+          setEventId(data._id || "");
         }
       } catch {
         setEventTitle("Event");
+        setEventId("");
       }
     }
     fetchEvent();
-  }, [eventId]);
+  }, [eventSlug]);
 
-  // Handle submit
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -50,7 +54,20 @@ export default function CreateWorkbookPage() {
 
     const userId = getUserIdFromCookie();
     if (!userId) {
-      alert("User ID not found in cookies. Please log in again.");
+      Swal.fire(
+        "User ID not found in cookies. Please log in again.",
+        "",
+        "error"
+      );
+      setLoading(false);
+      return;
+    }
+    if (!eventId) {
+      Swal.fire(
+        "Event ID tidak ditemukan. Silakan refresh halaman.",
+        "",
+        "error"
+      );
       setLoading(false);
       return;
     }
@@ -73,15 +90,26 @@ export default function CreateWorkbookPage() {
       });
 
       if (res.ok) {
-        router.push(`/event/${eventId}`);
+        Swal.fire({
+          icon: "success",
+          title: "Workbook berhasil dibuat!",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+        setTimeout(() => {
+          router.push(`/event/${eventSlug}`);
+        }, 1500);
       } else {
         const errorData = await res.json();
-        console.error("Error response:", errorData);
-        alert(errorData.message || "Failed to create workbook.");
+        Swal.fire(
+          errorData.message || "Failed to create workbook.",
+          "",
+          "error"
+        );
       }
     } catch (error) {
-      console.error("Error creating workbook:", error);
-      alert("An unexpected error occurred.");
+      console.log("🚀 ~ handleSubmit ~ error:", error);
+      Swal.fire("An unexpected error occurred.", "", "error");
     } finally {
       setLoading(false);
     }
@@ -91,74 +119,84 @@ export default function CreateWorkbookPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         {/* Breadcrumb */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
-            <Link href="/" className="hover:text-blue-600">
-              Home
-            </Link>
-            <span>/</span>
-            <Link href={`/event/${eventId}`} className="hover:text-blue-600">
-              {eventTitle || "Event"}
-            </Link>
-            <span>/</span>
-            <span className="text-gray-900">Create Workbook</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Create New Workbook
-          </h1>
-          <p className="mt-2 text-gray-600">Buat workbook untuk event ini.</p>
-        </div>
+        <nav className="mb-8" aria-label="Breadcrumb">
+          <ol className="flex items-center space-x-2 text-sm text-gray-500">
+            <li>
+              <Link href="/" className="hover:text-blue-600 font-medium">
+                Home
+              </Link>
+            </li>
+            <li>/</li>
+            <li>
+              {eventSlug ? (
+                <Link
+                  href={`/event/${eventSlug}`}
+                  className="hover:text-blue-600 font-medium"
+                >
+                  {eventTitle || "Event"}
+                </Link>
+              ) : (
+                <span className="text-gray-400">Event</span>
+              )}
+            </li>
+            <li>/</li>
+            <li>
+              <span className="text-gray-900 font-semibold">
+                Create Workbook
+              </span>
+            </li>
+          </ol>
+        </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+        <div className="max-w-2xl mx-auto">
+          <Card>
             <form className="space-y-6" onSubmit={handleSubmit}>
-              <Card>
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                      Workbook Information
-                    </h2>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="title"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Workbook Title *
-                    </label>
-                    <Input
-                      id="title"
-                      name="title"
-                      type="text"
-                      required
-                      placeholder="Judul workbook"
-                      className="text-lg"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="description"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Description *
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      rows={4}
-                      required
-                      placeholder="Deskripsi singkat tentang workbook ini..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating..." : "Create Workbook"}
-                  </Button>
-                </div>
-              </Card>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  Create New Workbook
+                </h1>
+                <p className="text-gray-600 mb-4">
+                  Buat workbook untuk event{" "}
+                  <span className="font-semibold">{eventTitle}</span>.
+                </p>
+              </div>
+              <div>
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Workbook Title <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="title"
+                  name="title"
+                  type="text"
+                  required
+                  placeholder="Judul workbook"
+                  className="text-lg"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={4}
+                  required
+                  placeholder="Deskripsi singkat tentang workbook ini..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Creating..." : "Create Workbook"}
+              </Button>
             </form>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

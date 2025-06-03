@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth-client";
 
 export default function ButtonCreateWorkbook({
-  eventId,
+  eventSlug,
   mode = "normal",
 }: {
-  eventId: string;
+  eventSlug: string;
   mode?: "normal" | "first";
 }) {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -20,7 +20,7 @@ export default function ButtonCreateWorkbook({
 
   const handleClick = () => {
     if (loggedIn) {
-      router.push(`/event/${eventId}/workbook/create`);
+      router.push(`/event/${eventSlug}/workbook/create`);
     } else {
       router.push("/login");
     }

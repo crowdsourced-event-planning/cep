@@ -1,10 +1,12 @@
 import { Metadata } from "next";
 import { getAllEvents } from "@/lib/data/event";
+import { toPlain } from "@/db/utils/toPlain";
 import EventCard from "@/components/EventCard";
 import GetStartedButton from "@/components/client/GetStartedButton";
 import Image from "next/image";
 import HowItWorks from "@/components/HowItWorks";
 import Link from "next/link";
+import { Event } from "../../types/event";
 
 export const metadata: Metadata = {
   title: "Collabora - Crowdsourced Event Planning Platform",
@@ -54,7 +56,8 @@ async function getRandomEventImage() {
 }
 
 export default async function HomePage() {
-  const events = await getAllEvents();
+  const eventsRaw = await getAllEvents();
+  const events = toPlain(eventsRaw) as Event[];
   const heroImage = await getRandomEventImage();
 
   return (
@@ -115,9 +118,9 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              {events.slice(0, 8).map((event) => (
+              {events.slice(0, 8).map((event: Event) => (
                 <EventCard
-                  key={event._id?.toString() || ""}
+                  key={event._id}
                   event={{
                     ...event,
                     _id: event._id?.toString() || "",
