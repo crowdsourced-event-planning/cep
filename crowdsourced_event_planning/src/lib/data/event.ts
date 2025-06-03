@@ -1,11 +1,31 @@
 import EventModel, { IEvent } from "@/db/models/EventModel";
 
-export async function getAllEvents(): Promise<IEvent[]> {
-  return await EventModel.getAll();
+type SerializedEvent = Omit<IEvent, "_id" | "creator"> & {
+  _id: string;
+  creator: string;
+};
+
+// Utility function to serialize MongoDB documents
+function serializeEvent(event: IEvent): SerializedEvent {
+  return {
+    ...event,
+    _id: event._id?.toString() || "",
+    creator: event.creator?.toString() || "",
+    createdAt: event.createdAt || new Date(),
+    updatedAt: event.updatedAt || new Date(),
+  };
 }
 
-export async function getEventById(eventId: string): Promise<IEvent | null> {
-  return await EventModel.getById(eventId);
+export async function getAllEvents(): Promise<SerializedEvent[]> {
+  const events = await EventModel.getAll();
+  return events.map(serializeEvent);
+}
+
+export async function getEventById(
+  eventId: string
+): Promise<SerializedEvent | null> {
+  const event = await EventModel.getById(eventId);
+  return event ? serializeEvent(event) : null;
 }
 
 export async function getEventsByUserId(userId: string): Promise<IEvent[]> {

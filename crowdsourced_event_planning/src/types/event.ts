@@ -10,6 +10,7 @@ export interface Event {
   startTime: string;
   endTime: string;
   typeEvent: string;
+  category: string; // Add this field
   status: string;
   targetFunding: number;
   currentFunding: number;
