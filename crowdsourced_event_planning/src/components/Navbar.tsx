@@ -31,16 +31,19 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white shadow">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center">
           <Image
             src="/logo.webp"
             alt="Collabora Logo"
-            width={40}
-            height={40}
+            width={80}
+            height={80}
             className="rounded-full"
             style={{ height: "auto" }}
           />
-          <span className="text-2xl font-bold text-blue-600 fresca">
+          <span
+            className="text-3xl font-bold text-blue-600 fresca"
+            style={{ letterSpacing: "0.1em" }}
+          >
             Collabora
           </span>
         </Link>
