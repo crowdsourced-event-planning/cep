@@ -46,8 +46,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SocketInitializer />
-        {/* <Navbar /> */}
-        {children}{" "}
         <AuthProvider>
           <ConditionalNavbar />
           {children}

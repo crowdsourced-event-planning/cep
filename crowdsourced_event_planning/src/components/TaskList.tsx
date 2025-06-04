@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Card from "./ui/card";
+import Card from "@/components/ui/Card";
 import type { ITask as Task } from "@/db/models/TaskModel";
 import { formatDate } from "@/lib/utils/formatDate";
 

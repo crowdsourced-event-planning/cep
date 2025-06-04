@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth-client";
-import Button from "../ui/Button";
+import Button from "@/components/ui/Button";
 
 export default function GetStartedButton() {
   const [loggedIn, setLoggedIn] = useState(false);

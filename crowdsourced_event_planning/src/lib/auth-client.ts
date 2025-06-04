@@ -63,18 +63,11 @@ export function isAuthenticated(): boolean {
 export function logout(): void {
   if (typeof window === "undefined") return;
 
-  // Hapus access_token
   // Hapus cookie access_token
   document.cookie =
     "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   // Hapus x-user-id
   document.cookie = "x-user-id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-
-  // Hapus cookie x-user-id
-  document.cookie = "x-user-id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-
-  // Hapus cookie user-role
-  document.cookie = "user-role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
 
   // Hapus cookie lain yang perlu dihapus jika ada
   document.cookie =

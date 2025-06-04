@@ -1,4 +1,4 @@
-import Button from "@/components/ui/button";
+import Button from "@/components/ui/Button";
 import { Upload, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";

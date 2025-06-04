@@ -19,15 +19,10 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("access_token")?.value;
   const userId = request.cookies.get("x-user-id")?.value;
 
-  // Cek jika path butuh login
-  const needsAuth = protectedPaths.some(
-    (path) =>
-      pathname.includes(path) ||
-      pathname.startsWith("/api/workbooks") ||
-      pathname.includes("/edit")
-  );
+  // Check if path needs authentication
+  // (removed unused needsAuth variable)
 
-  // Proteksi API events (workbooks/join) dan tasks
+  // Protect API events (workbooks/join) and tasks
   if (
     (pathname.startsWith("/api/events") &&
       (pathname.includes("/workbooks") || pathname.includes("/join"))) ||
@@ -40,7 +35,7 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // Untuk halaman biasa
+    // For regular pages
     if (
       protectedPaths.some((path) => pathname.startsWith(path)) &&
       !pathname.startsWith("/api/")
@@ -56,26 +51,26 @@ export async function middleware(request: NextRequest) {
     if (token) {
       try {
         const payload = decodeJwt(token);
-        console.log(payload, "<<<< ini payload");
+        // console.log(payload, "<<<< ini payload");
         response.headers.set(
           "x-jwt-payload",
           encodeURIComponent(JSON.stringify(payload))
         );
       } catch (err) {
-        console.error("❌ Gagal mendekode token:", err);
+        console.error("❌ Failed to decode token:", err);
       }
     }
     return response;
   }
-
-  export const config = {
-    matcher: [
-      "/transaksi/:path*",
-      "/chat/:path*",
-      "/komentar/:path*",
-      "/create",
-      "/api/events/:slug/workbooks",
-      "/api/events/:slug/join",
-      "/api/tasks",
-    ],
-  };
+}
+export const config = {
+  matcher: [
+    "/transaksi/:path*",
+    "/chat/:path*",
+    "/komentar/:path*",
+    "/create",
+    "/api/events/:slug/workbooks",
+    "/api/events/:slug/join",
+    "/api/tasks",
+  ],
+};

@@ -30,13 +30,10 @@ export default function JoinEventButtonWrapper({
       return;
     }
 
-    const user = getCurrentUser();
-    if (!user) {
-      setCheckingStatus(false);
-      return;
-    }
-
     try {
+      const user = getCurrentUser();
+      if (!user) return;
+
       const response = await fetch(
         `/api/events/${eventId}/join?userId=${user._id}`
       );

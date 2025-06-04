@@ -106,7 +106,7 @@ export default async function HomePage() {
                 <EventCard
                   key={event._id?.toString() || ""}
                   event={event}
-                  currentUserId={userId}
+                  currentUserId={userId.toString()}
                   showJoinButton={true}
                 />
               ))}

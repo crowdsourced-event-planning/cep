@@ -1,9 +1,78 @@
-import { getDb } from "@/db/config/mongodb";
 import EventModel, { IEvent } from "@/db/models/EventModel";
-import { slugify } from "@/lib/utils/slugify";
 
-export async function getAllEvents(): Promise<IEvent[]> {
-  return await EventModel.getAll();
+// Tambahkan tipe serialisasi
+export interface IEventSerialized {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  typeEvent: string;
+  location: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  targetFunding: number;
+  currentFunding: number;
+  status: string;
+  creator: string;
+  budget: { name: string; amount: number }[];
+  gallery: string[];
+  documents: string[];
+  cancelReason: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Fungsi serialisasi
+export function serializeEvent(event: IEvent): IEventSerialized {
+  return {
+    _id: event._id?.toString() ?? "",
+    title: event.title ?? "",
+    description: event.description ?? "",
+    category: event.category ?? "",
+    typeEvent: event.typeEvent ?? "",
+    location: event.location ?? "",
+    startDate:
+      event.startDate instanceof Date
+        ? event.startDate.toISOString()
+        : event.startDate ?? "",
+    startTime: event.startTime ?? "",
+    endDate:
+      event.endDate instanceof Date
+        ? event.endDate.toISOString()
+        : event.endDate ?? "",
+    endTime: event.endTime ?? "",
+    targetFunding: event.targetFunding ?? 0,
+    currentFunding: event.currentFunding ?? 0,
+    status: event.status ?? "",
+    creator: event.creator?.toString?.() ?? "",
+    budget: Array.isArray(event.budget)
+      ? event.budget.map((b: { name?: string; amount?: number }) => ({
+          name: b?.name ?? "",
+          amount: typeof b?.amount === "number" ? b.amount : 0,
+        }))
+      : [],
+    gallery: event.gallery ?? [],
+    documents: event.documents ?? [],
+    cancelReason: event.cancelReason ?? "",
+    slug: event.slug ?? "",
+    createdAt:
+      event.createdAt instanceof Date
+        ? event.createdAt.toISOString()
+        : event.createdAt ?? "",
+    updatedAt:
+      event.updatedAt instanceof Date
+        ? event.updatedAt.toISOString()
+        : event.updatedAt ?? "",
+  };
+}
+
+// Ubah getAllEvents agar langsung return hasil serialisasi
+export async function getAllEvents(): Promise<IEventSerialized[]> {
+  const events = await EventModel.getAll();
+  return events.map(serializeEvent);
 }
 
 export async function getEventById(eventId: string): Promise<IEvent | null> {
@@ -25,9 +94,6 @@ export async function getEventsByUserId(userId: string): Promise<IEvent[]> {
 }
 
 export async function createEvent(eventData: Partial<IEvent>): Promise<IEvent> {
-  if (eventData.title && !eventData.slug) {
-    eventData.slug = slugify(eventData.title);
-  }
   return await EventModel.create(eventData);
 }
 
@@ -35,9 +101,6 @@ export async function updateEvent(
   eventId: string,
   eventData: Partial<IEvent>
 ): Promise<IEvent | null> {
-  if (eventData.title) {
-    eventData.slug = slugify(eventData.title);
-  }
   return await EventModel.update(eventId, eventData);
 }
 
@@ -56,10 +119,4 @@ export async function updateEventFunding(
   return await EventModel.update(eventId, {
     currentFunding: newCurrentFunding,
   });
-}
-
-export async function getEventBySlug(slug: string): Promise<IEvent | null> {
-  const db = await getDb();
-  const event = await db.collection<IEvent>("events").findOne({ slug });
-  return event || null;
 }

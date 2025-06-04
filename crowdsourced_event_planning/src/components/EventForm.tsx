@@ -1,5 +1,5 @@
-import Card from "@/components/ui/card";
-import Button from "@/components/ui/button";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ImageUploader from "@/components/ImageUploader";
 import DocumentUploader from "@/components/DocumentUploader";

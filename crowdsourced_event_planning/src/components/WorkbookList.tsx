@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Card from "./ui/card";
+import Card from "@/components/ui/Card";
 import { formatDate } from "@/lib/utils/formatDate";
 import type { WorkbookClient } from "./client/WorkbookListClient";
 import Button from "@/components/ui/Button";

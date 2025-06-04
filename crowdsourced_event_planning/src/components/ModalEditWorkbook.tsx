@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Button from "./ui/button";
+import Button from "@/components/ui/Button";
 import { toast } from "react-hot-toast";
 
 interface ModalEditWorkbookProps {

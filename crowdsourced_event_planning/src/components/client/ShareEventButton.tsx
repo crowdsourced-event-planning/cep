@@ -1,7 +1,7 @@
 // ShareEventButton.tsx
 "use client";
 import { useState } from "react";
-import Button from "../ui/button";
+import Button from "@/components/ui/Button";
 
 export default function ShareEventButton({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);

@@ -6,6 +6,7 @@ export interface IEvent {
   _id?: ObjectId;
   title: string;
   slug: string;
+  category: string;
   description: string;
   location: string;
   startDate: Date;
@@ -17,7 +18,7 @@ export interface IEvent {
   targetFunding: number;
   currentFunding: number;
   creator: ObjectId;
-  participants: string[];
+  // participants: string[];
   budget: object[];
   gallery: string[];
   documents: string[];

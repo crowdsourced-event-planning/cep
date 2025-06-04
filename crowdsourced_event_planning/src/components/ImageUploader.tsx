@@ -9,7 +9,7 @@ import {
 } from "@hello-pangea/dnd";
 import toast from "react-hot-toast";
 import { X, Upload } from "lucide-react";
-import Button from "@/components/ui/button";
+import Button from "@/components/ui/Button";
 
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
