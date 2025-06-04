@@ -7,6 +7,7 @@ import ConditionalNavbar from "@/components/ConditionalNavbar";
 import { initializeDatabase } from "@/lib/db-init";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "react-hot-toast";
+import { Fresca } from "next/font/google";
 
 // Initialize the database collections
 initializeDatabase().catch(console.error);
@@ -19,6 +20,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const fresca = Fresca({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-fresca",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${fresca.variable}  antialiased`}
       >
         <SocketInitializer />
         <AuthProvider>

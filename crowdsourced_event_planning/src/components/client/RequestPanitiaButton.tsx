@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
+import Button from "../ui/Button";
 
 interface Props {
   eventId: string;
   userId: string;
-  workbookId: string;
+  workbookId?: string;
   requestStatus?: "pending" | "approved" | "rejected";
+  buttonLabel?: string; // Tambahkan ini
 }
 
 export default function RequestPanitiaButton({
@@ -15,6 +17,7 @@ export default function RequestPanitiaButton({
   userId,
   workbookId,
   requestStatus,
+  buttonLabel,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -40,12 +43,12 @@ export default function RequestPanitiaButton({
 
   if (requestStatus === "pending") {
     return (
-      <button
-        className="px-4 py-2 rounded bg-yellow-200 text-yellow-800 font-semibold cursor-not-allowed"
+      <Button
+        className="w-full px-4 py-2 mt-1 mb-4 rounded bg-yellow-200 text-yellow-800 font-semibold cursor-not-allowed"
         disabled
       >
         Awaiting Approval
-      </button>
+      </Button>
     );
   }
 
@@ -61,19 +64,19 @@ export default function RequestPanitiaButton({
   // Jika belum pernah request, juga boleh request
   return (
     <form onSubmit={handleRequest}>
-      <button
+      <Button
         type="submit"
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
         disabled={loading || success}
       >
         {loading
-          ? "Mengirim..."
+          ? "Sending..."
           : success
-          ? "Permintaan Terkirim"
+          ? "Request Sent"
           : requestStatus === "rejected"
-          ? "Request Lagi"
-          : "Request jadi Panitia Event"}
-      </button>
+          ? buttonLabel || "Request Again"
+          : buttonLabel || "Request Committee"}
+      </Button>
     </form>
   );
 }

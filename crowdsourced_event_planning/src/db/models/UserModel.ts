@@ -126,8 +126,14 @@ export default class UserModel {
     // Buat token JWT dengan tambahan role
     const token = await signToken({
       _id: user._id!.toString(),
+      name: user.name, // Pastikan `name` disertakan
+      email: user.email,
+      role: user.role,
+    });
+    console.log("JWT Payload:", {
+      _id: user._id,
       name: user.name,
-      role: user.role, // Tambahkan role ke token
+      role: user.role,
     });
 
     // Kembalikan user dan token

@@ -8,16 +8,23 @@ import FundingTracker from "@/components/client/FundingTracker";
 import CreateWorkbookButton from "@/components/client/CreateWorkbookButton";
 import WorkbookListClient from "@/components/client/WorkbookListClient";
 import { cookies } from "next/headers";
-import { isPanitiaApproved } from "@/lib/data/panitiaRequest";
+import {
+  isPanitiaApproved,
+  getPanitiaRequestByUserAndEvent,
+} from "@/lib/data/panitiaRequest";
 import { UserEventModel } from "@/db/models/UserEventModel";
 import ShareEventButton from "@/components/client/ShareEventButton";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import EventGalleryWithModal from "@/components/client/EventGalleryWithModal";
 import EventActions from "@/components/client/EventActions";
-import Link from "next/link";
-import Button from "@/components/ui/Button";
 import DonateNotification from "@/components/client/DonateNotification";
 import DonationButtonWithModal from "@/components/client/DonationButtonWithModal";
+import EventDescription from "@/components/client/EventDescription";
+
+import EventChatActionsClient from "@/components/client/EventChatActionsClient";
+import RequestPanitiaButton from "@/components/client/RequestPanitiaButton";
+import Link from "next/link";
+import { getUserById } from "@/lib/data/user"; // contoh fungsi
 
 interface EventPageProps {
   params: Promise<{
@@ -59,6 +66,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     }
 
     const userId = (await cookies()).get("x-user-id")?.value || "";
+    let user = null;
+    if (userId) {
+      user = await getUserById(userId); // pastikan fungsi ini mengembalikan user dengan name
+    }
     const eventId = event._id?.toString() || "";
 
     // Fetch workbooks for the event
@@ -75,6 +86,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       : false;
     // Cek apakah user adalah creator
     const isCreator = event.creator?.toString() === userId;
+
+    // Cek apakah sudah ada request panitia sebelumnya
+    const existingRequest = userId
+      ? await getPanitiaRequestByUserAndEvent(eventId, userId)
+      : null;
 
     // Define the type for budget items
     type BudgetItem = {
@@ -132,6 +148,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                     </span>
                   </div>
 
+                  {/* Category Badge */}
+                  {event.category && (
+                    <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold mb-2">
+                      {event.category}
+                    </span>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                     <div>
                       <strong>Location:</strong> {event.location}
@@ -148,6 +171,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       {event.endTime}
                     </div>
                   </div>
+
+                  {/* Ganti bagian deskripsi */}
+                  <EventDescription description={event.description} />
 
                   <div>
                     {event.budget && event.budget.length > 0 && (
@@ -252,13 +278,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <Card>
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold">Actions</h3>
-                  {/* Hanya tampilkan tombol donasi jika event masih open */}
                   {event.status === "open" && (
                     <DonationButtonWithModal
                       eventSlug={event.slug}
                       userId={userId}
                     />
                   )}
+
                   <EventActions
                     isCreator={isCreator}
                     event={{
@@ -266,8 +292,6 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       _id: event._id?.toString() || "",
                       creator:
                         event.creator?.toString?.() || event.creator || "",
-                      // tambahkan field lain jika perlu
-                      // hindari passing object MongoDB/Buffer
                     }}
                     isJoined={isJoined}
                   />
@@ -278,39 +302,53 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </Card>
               {/* Event Chat */}
               <Card>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Event Discussion</h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mb-4">
                     Join the event to participate in discussions!
                   </p>
+                  <EventChatActionsClient
+                    currentUser={{
+                      _id: userId,
+                      name: user?.name || "", // <-- gunakan nama dari database
+                      email: user?.email || "",
+                      role: user?.role || "",
+                      balance: user?.balance || 0,
+                      iat: Math.floor(Date.now() / 1000),
+                      exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now
+                    }}
+                    eventId={eventId}
+                    isPanitia={isPanitia}
+                    isCreator={isCreator}
+                    isJoined={isJoined}
+                    eventSlug={event.slug}
+                  />
 
-                  {(isPanitia || isCreator) && (
-                    <div className="w-full">
-                      <Link href={`/event/${event.slug}/chat/admin`}>
-                        <Button className="w-full">Group Chat Panitia</Button>
+                  {/* Kondisi tombol Request Committee */}
+                  {!userId ? (
+                    <div className="mt-4 text-center">
+                      <Link
+                        href={`/login?callbackUrl=/event/${event.slug}`}
+                        className="inline-block px-4 py-2 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition"
+                      >
+                        Login to Request Committee
                       </Link>
                     </div>
+                  ) : (
+                    !isCreator && // Tambahkan pengecekan ini
+                    !isPanitia &&
+                    existingRequest?.status !== "approved" && (
+                      <div className="mt-4 text-center">
+                        <RequestPanitiaButton
+                          eventId={eventId}
+                          userId={userId}
+                          workbookId={""}
+                          requestStatus={existingRequest?.status}
+                          buttonLabel="Request Committee"
+                        />
+                      </div>
+                    )
                   )}
-                  {(isJoined || isPanitia || isCreator) && (
-                    <Link href={`/event/${event.slug}/chat/member`}>
-                      <Button className="w-full">Group Chat Member</Button>
-                    </Link>
-                  )}
-                  {/* <p className="text-sm text-gray-600 mb-4">
-                    Join the event to participate in discussions!
-                  </p>
-                  <div className="flex space-x-2">
-                    {(isCreator || isAdmin) && (
-                      <Link href={`/event/${eventParam}/chat/admin`} passHref>
-                        <Button className="w-full">Group Chat Admin</Button>
-                      </Link>
-                    )}
-                    {(isCreator || isJoined) && (
-                      <Link href={`/event/${eventParam}/chat/member`} passHref>
-                        <Button className="w-full">Group Chat Member</Button>
-                      </Link>
-                    )}
-                  </div> */}
                 </div>
               </Card>
             </div>

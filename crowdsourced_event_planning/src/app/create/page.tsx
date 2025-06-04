@@ -6,7 +6,7 @@ import Link from "next/link";
 import { getCurrentUser, isAuthenticated } from "@/lib/auth-client";
 import EventForm from "@/components/EventForm";
 import ImageModal from "@/components/ImageModal";
-import toast from "react-hot-toast"; // Ganti import ini
+import toast from "react-hot-toast";
 
 // Tipe data
 type BudgetItem = { name: string; amount: number };
@@ -53,7 +53,8 @@ export default function CreateEventPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
-  const handleInputChange = (
+  // Ganti handleInputChange jadi async
+  const handleInputChange = async (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
@@ -162,7 +163,7 @@ export default function CreateEventPage() {
         documents,
       };
 
-      await fetch("/api/events", {
+      const response = await fetch("/api/events", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -171,13 +172,23 @@ export default function CreateEventPage() {
         body: JSON.stringify(eventData),
       });
 
+      if (!response.ok) {
+        throw new Error("Failed to create event");
+      }
+
+      const data = await response.json();
+
       toast.success(
         `Event ${isDraft ? "saved as draft" : "created"} successfully!`
       );
-      setTimeout(() => {
-        router.push("/");
+
+      const slug = data.event?.slug;
+      if (slug) {
+        router.push(`/event/${slug}`);
         router.refresh();
-      }, 300);
+      } else {
+        toast.error("Gagal mendapatkan slug event.");
+      }
     } catch (error) {
       console.error("Error creating event:", error);
       toast.error(

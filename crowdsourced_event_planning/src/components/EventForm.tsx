@@ -5,8 +5,8 @@ import ImageUploader from "@/components/ImageUploader";
 import DocumentUploader from "@/components/DocumentUploader";
 import ImageModal from "@/components/ImageModal";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import React from "react";
+import { ChevronLeft, ChevronRight, MoonStar } from "lucide-react";
+import React, { useRef, useEffect, useState } from "react";
 import { formatCurrency, formatRupiahInput } from "@/lib/utils/format";
 
 type BudgetItem = {
@@ -64,6 +64,7 @@ type EventFormProps = {
 
 const EventForm: React.FC<EventFormProps> = ({
   formData,
+  setFormData,
   budgetItems,
   currentBudgetItem,
   setCurrentBudgetItem,
@@ -77,15 +78,117 @@ const EventForm: React.FC<EventFormProps> = ({
   setModalIndex,
   setUploadingImage,
   setUploadingDoc,
+  uploadingImage,
+  uploadingDoc,
   loading,
   handleInputChange,
   handleFundingChange,
   addBudgetItem,
   removeBudgetItem,
   handleSubmit,
-  buttonLabel,
 }) => {
   const today = new Date().toISOString().split("T")[0];
+  const [typing, setTyping] = React.useState(false);
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (descRef.current) {
+      descRef.current.style.height = "auto";
+      descRef.current.style.height = descRef.current.scrollHeight + "px";
+    }
+  }, [formData.description]);
+
+  // Stop typing AI jika title berubah, description diubah manual, atau komponen unmount
+  useEffect(() => {
+    return () => {
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    };
+  }, []);
+
+  // Stop typing jika title berubah saat AI mengetik
+  useEffect(() => {
+    if (typing) {
+      // Jika title berubah saat typing, stop typing
+      stopTyping();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.title]);
+
+  // Stop typing jika description diubah manual saat AI mengetik
+  const handleDescriptionChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    if (typing) stopTyping();
+    handleInputChange(e);
+  };
+
+  function stopTyping() {
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    setTyping(false);
+  }
+
+  // Handler untuk generate AI
+  const handleGenerateAI = async () => {
+    if (!formData.title.trim()) return;
+    stopTyping();
+    setTyping(true);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: formData.title }),
+      });
+      const data = await res.json();
+      if (data.description) {
+        let i = 0;
+        typingIntervalRef.current = setInterval(() => {
+          setFormData((prev) => ({
+            ...prev,
+            description: data.description.slice(0, i),
+          }));
+          i++;
+          if (i > data.description.length) {
+            stopTyping();
+          }
+        }, 15);
+      } else {
+        stopTyping();
+      }
+    } catch {
+      stopTyping();
+      alert("Gagal generate deskripsi otomatis");
+    }
+  };
+
+  // State untuk animasi titik-titik
+  const [dotCount, setDotCount] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (loading || uploadingImage || uploadingDoc || typing) {
+      interval = setInterval(() => {
+        setDotCount((prev) => (prev + 1) % 4);
+      }, 400);
+    } else {
+      setDotCount(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading, uploadingImage, uploadingDoc, typing]);
+
+  // Tentukan status dan teks tombol
+  let buttonText = "Create Event";
+  let buttonDisabled = false;
+  if (uploadingImage || uploadingDoc) {
+    buttonText = "Uploading files, please wait" + ".".repeat(dotCount);
+    buttonDisabled = true;
+  } else if (loading) {
+    buttonText = "Creating event" + ".".repeat(dotCount);
+    buttonDisabled = true;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -109,17 +212,30 @@ const EventForm: React.FC<EventFormProps> = ({
                     >
                       Event Title *
                     </label>
-                    <Input
-                      id="title"
-                      name="title"
-                      type="text"
-                      required
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      placeholder="Give your event a compelling title"
-                      className="text-lg"
-                      disabled={loading}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="title"
+                        name="title"
+                        type="text"
+                        required
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        placeholder="Give your event a compelling title"
+                        className="text-lg pr-10"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700 p-1 cursor-pointer"
+                        onClick={handleGenerateAI}
+                        disabled={loading || typing || !formData.title.trim()}
+                        title="Generate Description with AI"
+                        tabIndex={-1}
+                        style={{ background: "none", border: "none" }}
+                      >
+                        <MoonStar size={20} />
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label
@@ -131,14 +247,25 @@ const EventForm: React.FC<EventFormProps> = ({
                     <textarea
                       id="description"
                       name="description"
-                      rows={4}
+                      rows={1}
                       required
-                      value={formData.description}
-                      onChange={handleInputChange}
+                      ref={descRef}
+                      value={
+                        typing
+                          ? formData.description + "▍"
+                          : formData.description
+                      }
+                      onChange={handleDescriptionChange}
                       placeholder="Describe your event, its purpose, and what makes it special..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      disabled={loading}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-none transition-all"
+                      disabled={loading || typing}
+                      style={{ overflow: "hidden" }}
                     />
+                    {typing && (
+                      <div className="text-sm text-blue-700 mt-1">
+                        AI is generating description{".".repeat(dotCount)}
+                      </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -238,6 +365,8 @@ const EventForm: React.FC<EventFormProps> = ({
                         onChange={handleInputChange}
                         disabled={loading}
                         min={today}
+                        placeholder="hh/bb/tttt"
+                        className="cursor-pointer"
                       />
                     </div>
                     <div>
@@ -255,6 +384,8 @@ const EventForm: React.FC<EventFormProps> = ({
                         value={formData.startTime}
                         onChange={handleInputChange}
                         disabled={loading}
+                        placeholder="--.--"
+                        className="cursor-pointer"
                       />
                     </div>
                     <div>
@@ -273,6 +404,8 @@ const EventForm: React.FC<EventFormProps> = ({
                         onChange={handleInputChange}
                         disabled={loading}
                         min={today}
+                        placeholder="hh/bb/tttt"
+                        className="cursor-pointer"
                       />
                     </div>
                     <div>
@@ -291,6 +424,8 @@ const EventForm: React.FC<EventFormProps> = ({
                         onChange={handleInputChange}
                         disabled={loading}
                         min={formData.startTime || undefined}
+                        placeholder="--.--"
+                        className="cursor-pointer"
                       />
                     </div>
                   </div>
@@ -439,12 +574,14 @@ const EventForm: React.FC<EventFormProps> = ({
               <div className="flex justify-end space-x-4">
                 <Button
                   type="submit"
-                  className={`... ${
-                    loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                  className={`${
+                    buttonDisabled
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer"
                   }`}
-                  disabled={loading}
+                  disabled={buttonDisabled}
                 >
-                  {buttonLabel}
+                  {buttonText}
                 </Button>
               </div>
             </form>

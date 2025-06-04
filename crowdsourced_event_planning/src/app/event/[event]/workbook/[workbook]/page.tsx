@@ -65,7 +65,7 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
-          { label: "Events", href: "/event" },
+          { label: "Events", href: "/events" },
           { label: event.title, href: `/event/${event.slug}` },
           { label: workbook.name },
         ]}
@@ -112,6 +112,7 @@ export default async function WorkbookDetail({ params }: WorkbookPageProps) {
               userId={userId}
               workbookId={workbookId}
               requestStatus={existingRequest?.status}
+              buttonLabel="Request Taskboard"
             />
           </div>
         )}

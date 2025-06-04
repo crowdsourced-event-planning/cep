@@ -22,8 +22,17 @@ export default function PanitiaRequestNotification({
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/request-panitia?creatorId=${userId}`);
-    const data = await res.json();
-    setRequests(data.requests || []);
+    if (!res.ok) {
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
+    try {
+      const data = await res.json();
+      setRequests(data.requests || []);
+    } catch {
+      setRequests([]);
+    }
     setLoading(false);
   }, [userId]);
 
@@ -54,12 +63,12 @@ export default function PanitiaRequestNotification({
   return (
     <div className="relative ">
       <button
-        className="relative"
+        className={`relative rounded transition-colors cursor-pointer text-gray-700 hover:bg-blue-50 hover:text-blue-700 p-1`}
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifikasi Permintaan Panitia"
       >
         <svg
-          className="w-6 h-6 mt-1 text-blue-600 cursor-pointer"
+          className="w-6 h-6 mt-1"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -78,18 +87,26 @@ export default function PanitiaRequestNotification({
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-[420px] bg-white rounded-xl shadow-lg z-50 max-h-[60vh] overflow-y-auto">
+        <div
+          className={`
+      absolute right-0 mt-2 bg-white rounded-xl shadow-lg z-50 max-h-[60vh] overflow-y-auto
+      w-[90vw] left-1/2 -translate-x-1/2
+      sm:w-[420px] sm:left-auto sm:right-0 sm:translate-x-0
+      p-2
+    `}
+          style={{ minWidth: "260px" }}
+        >
           <div className="p-4 border-b border-gray-300 font-bold text-black-700">
-            Request for Committee Members
+            Request for Committee & Members
           </div>
           {loading ? (
             <div className="p-4 text-gray-500">Loading...</div>
           ) : pendingRequests.length === 0 ? (
             <div className="p-4 text-gray-500">
-              There are no committee requests for your event
+              There are no committee & member requests for your event
             </div>
           ) : (
-            <table className="min-w-full text-sm">
+            <table className="min-w-full text-sm p-2">
               <thead>
                 <tr className="text-left text-xs text-gray-500 border-b border-gray-300">
                   <th className="py-2 px-2">Event Name</th>

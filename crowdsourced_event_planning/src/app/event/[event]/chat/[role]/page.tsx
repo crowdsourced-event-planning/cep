@@ -48,6 +48,7 @@ export default async function ChatPage({ params }: Props) {
       currentUser={currentUser}
       eventId={event._id!.toString()}
       role={role}
+      onClose={() => {}}
     />
   );
 }

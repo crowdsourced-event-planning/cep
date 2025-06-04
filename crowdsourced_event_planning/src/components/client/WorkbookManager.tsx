@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 
 interface WorkbookFormData {
@@ -25,6 +26,7 @@ export default function WorkbookManager({
     name: "",
     description: "",
   });
+  const router = useRouter();
 
   const resetForm = () => {
     setFormData({
@@ -80,7 +82,7 @@ export default function WorkbookManager({
       alert("Workbook created successfully!");
 
       // Refresh the page to show the new workbook
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       console.error("Error creating workbook:", err);
       setError(

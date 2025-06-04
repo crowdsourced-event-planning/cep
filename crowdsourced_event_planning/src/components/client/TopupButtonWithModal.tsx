@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import Button from "@/components/ui/Button";
 import AmountInput from "@/components/AmountInput";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 import { Wallet, X } from "lucide-react";
 
@@ -13,6 +13,7 @@ export default function TopupButtonWithModal() {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleAmountChange = (value: string) => setAmount(value);
 
@@ -77,14 +78,14 @@ export default function TopupButtonWithModal() {
                     onValueChange={handleAmountChange}
                   />
                 </div>
-                <button
+                <Button
                   type="submit"
                   className="w-full bg-blue-600 text-white py-2 rounded-full font-semibold hover:bg-blue-700 transition cursor-pointer flex items-center justify-center gap-2"
                   disabled={loading}
                 >
                   <Wallet size={18} />
                   {loading ? "Memproses..." : "Topup Sekarang"}
-                </button>
+                </Button>
               </form>
             </div>
           </div>,
@@ -94,15 +95,17 @@ export default function TopupButtonWithModal() {
 
   return (
     <>
-      {/* <Toaster position="top-center" /> */}
-      <Button
-        className="cursor-pointer flex items-center gap-2"
+      <button
+        className={`px-3 py-2 rounded font-medium transition-colors cursor-pointer ${
+          pathname === "/topup"
+            ? "bg-blue-50 text-blue-700"
+            : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+        }`}
         onClick={() => setOpen(true)}
         type="button"
       >
-        <Wallet size={18} className="inline-block" />
         Topup Saldo
-      </Button>
+      </button>
       {modal}
     </>
   );

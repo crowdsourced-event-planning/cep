@@ -88,7 +88,7 @@ export default function EventActions({
       eventId={event.slug}
       eventStatus={event.status}
       initialIsJoined={!!isJoined}
-      className="w-full"
+      className="w-full cursor-pointer"
     />
   );
 }

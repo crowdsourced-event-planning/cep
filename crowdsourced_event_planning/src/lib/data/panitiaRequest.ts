@@ -32,3 +32,14 @@ export async function isPanitiaApproved(eventId: string, userId: string) {
   });
   return !!found;
 }
+
+export async function getPanitiaRequestByUserAndEvent(
+  eventId: string,
+  userId: string
+) {
+  const db = await getDb();
+  return db.collection("panitia_requests").findOne({
+    eventId: new ObjectId(eventId),
+    userId: new ObjectId(userId),
+  });
+}
