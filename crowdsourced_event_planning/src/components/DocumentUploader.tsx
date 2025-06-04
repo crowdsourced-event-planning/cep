@@ -79,12 +79,12 @@ export default function DocumentUploader({
           size="sm"
           onClick={() => inputRef.current?.click()}
           disabled={!!documentUrl}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 cursor-pointer"
         >
-          <Upload className="w-4 h-4" />
+          <Upload className="w-4 h-4 cursor-pointer" />
           Pilih Dokumen
         </Button>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-500 cursor-pointer">
           {documentUrl ? "1/1 file dipilih" : "Belum ada file"}
         </span>
         {documentUrl && (

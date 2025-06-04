@@ -4,7 +4,7 @@ import EventModel from "@/db/models/EventModel";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { userId, role = "viewer" } = await request.json();
@@ -16,7 +16,7 @@ export async function POST(
       );
     }
 
-    const { slug } = await params;
+    const { slug } = await context.params;
 
     // Check if event exists and get the actual event with ObjectId
     const event = await EventModel.getBySlugOrId(slug);
@@ -64,7 +64,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { userId } = await request.json();
@@ -76,7 +76,7 @@ export async function DELETE(
       );
     }
 
-    const { slug } = await params;
+    const { slug } = await context.params;
 
     // Check if event exists and get the actual event with ObjectId
     const event = await EventModel.getBySlugOrId(slug);
@@ -123,7 +123,7 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
@@ -136,7 +136,7 @@ export async function GET(
       );
     }
 
-    const { slug } = await params;
+    const { slug } = await context.params;
 
     // Check if event exists and get the actual event with ObjectId
     const event = await EventModel.getBySlugOrId(slug);

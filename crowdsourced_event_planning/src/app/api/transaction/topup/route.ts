@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       description: "Topup",
       currency: "IDR",
       reminderTime: 1,
+      successRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/profile`,
     };
 
     console.log(secretKey, "secret key");

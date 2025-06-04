@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getFundingsByEventId,
-  getTotalFundingByEventId,
-} from "@/lib/data/funding";
+import { getEventById } from "@/lib/data/event";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get("eventId");
-    const total = searchParams.get("total");
 
     if (!eventId) {
       return NextResponse.json(
@@ -17,13 +13,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (total === "true") {
-      const totalFunding = await getTotalFundingByEventId(eventId);
-      return NextResponse.json({ total: totalFunding });
+    // Ambil event dari DB
+    const event = await getEventById(eventId);
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    const funding = await getFundingsByEventId(eventId);
-    return NextResponse.json(funding);
+    // Return hanya currentFunding
+    return NextResponse.json({ currentFunding: event.currentFunding || 0 });
   } catch (error) {
     console.error("Error fetching funding:", error);
     return NextResponse.json(

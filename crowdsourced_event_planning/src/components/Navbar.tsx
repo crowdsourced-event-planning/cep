@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import PanitiaRequestNotification from "@/components/client/PanitiaRequestNotification";
+import TopupButtonWithModal from "@/components/client/TopupButtonWithModal";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -77,14 +78,6 @@ export default function Navbar() {
           ) : (
             <>
               <Link
-                href="/topup"
-                className={`font-medium hover:text-blue-600 transition-colors ${
-                  pathname === "/topup" ? "text-blue-600" : "text-gray-700"
-                }`}
-              >
-                Topup
-              </Link>
-              <Link
                 href="/profile"
                 className={`font-medium hover:text-blue-600 transition-colors ${
                   pathname === "/profile" ? "text-blue-600" : "text-gray-700"
@@ -103,6 +96,7 @@ export default function Navbar() {
           {loggedIn && user?._id && (
             <PanitiaRequestNotification userId={user._id} />
           )}
+          {loggedIn && user?._id && <TopupButtonWithModal />}
         </div>
         {/* Hamburger */}
         <button
@@ -129,7 +123,6 @@ export default function Navbar() {
       {menuOpen && (
         <div className="md:hidden bg-white border-t shadow">
           <div className="flex flex-col px-4 py-2 space-y-2">
-            {" "}
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -146,7 +139,7 @@ export default function Navbar() {
               >
                 {link.label}
               </Link>
-            ))}{" "}
+            ))}
             {!isAuthenticated ? (
               <Link
                 href="/login"
@@ -159,15 +152,8 @@ export default function Navbar() {
               </Link>
             ) : (
               <>
-                <Link
-                  href="/topup"
-                  className={`font-medium py-2 hover:text-blue-600 transition-colors ${
-                    pathname === "/topup" ? "text-blue-600" : "text-gray-700"
-                  }`}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Topup
-                </Link>
+                {/* Ganti Link Topup dengan TopupButtonWithModal */}
+                {loggedIn && user?._id && <TopupButtonWithModal />}
                 <Link
                   href="/profile"
                   className={`font-medium py-2 hover:text-blue-600 transition-colors ${

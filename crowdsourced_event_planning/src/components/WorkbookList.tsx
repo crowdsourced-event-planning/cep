@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Card from "@/components/ui/Card";
-import { formatDate } from "@/lib/utils/formatDate";
+import { formatDate } from "@/lib/utils/format";
 import type { WorkbookClient } from "./client/WorkbookListClient";
 import Button from "@/components/ui/Button";
 import { useRouter } from "next/navigation";

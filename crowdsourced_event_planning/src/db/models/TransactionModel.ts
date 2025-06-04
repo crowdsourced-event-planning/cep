@@ -1,7 +1,12 @@
 import { ObjectId } from "mongodb";
 import { dbConnect, getDb } from "../config/mongodb";
-import { toObjectId, validateObjectId } from "../utils/validateObjectId";
-import { IUser } from "./UserModel";
+import {
+  createObjectId,
+  toObjectId,
+  validateObjectId,
+} from "../utils/validateObjectId";
+import UserModel, { IUser } from "./UserModel";
+import EventModel from "./EventModel";
 
 export interface ITransaction {
   _id?: ObjectId;
@@ -9,9 +14,11 @@ export interface ITransaction {
   amount: number;
   status: string;
   type: string;
+  eventId?: string;
   xenditId: string;
   invoiceId: string;
   invoiceUrl: string;
+  description?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -86,7 +93,7 @@ export default class TransactionModel {
           throw new Error("Topup not found");
         }
 
-        if (status === "PAID") {
+        if (status === "PAID" || status === "SETTLED") {
           await db
             .collection<ITransaction>(this.COLLECTION_NAME)
             .updateOne({ xenditId }, { $set: { status } }, { session });
@@ -119,6 +126,129 @@ export default class TransactionModel {
     } catch (err) {
       console.error("Transaction failed:", err);
       throw new Error("Failed to update transaction");
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  static async getTransactionsByUserId(
+    userId: string
+  ): Promise<ITransaction[]> {
+    validateObjectId(userId, "User ID");
+    const db = await getDb();
+    const transactions = await db
+      .collection<ITransaction>(this.COLLECTION_NAME)
+      .find({ userId: toObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return transactions;
+  }
+
+  static async getTransactionById(
+    transactionId: string
+  ): Promise<ITransaction | null> {
+    validateObjectId(transactionId, "Transaction ID");
+    const db = await getDb();
+    const transaction = await db
+      .collection<ITransaction>(this.COLLECTION_NAME)
+      .findOne({ _id: toObjectId(transactionId) });
+    return transaction;
+  }
+
+  static async getTransactionsByEventId(
+    eventId: string
+  ): Promise<ITransaction[]> {
+    validateObjectId(eventId, "Event ID");
+    const db = await getDb();
+    const transactions = await db
+      .collection<ITransaction>(this.COLLECTION_NAME)
+      .find({ eventId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return transactions;
+  }
+
+  static async donate({
+    userId,
+    eventId,
+    amount,
+    message,
+  }: {
+    userId: string;
+    eventId: string;
+    amount: number;
+    message?: string;
+  }): Promise<ITransaction> {
+    const { db, client } = await dbConnect();
+    const session = client.startSession();
+
+    let newTransaction: ITransaction | undefined;
+
+    try {
+      await session.withTransaction(async () => {
+        const user = await UserModel.getById(userId);
+        const event = await EventModel.getById(eventId);
+        if (!user) throw new Error("User not found");
+        if (!event) throw new Error("Event not found");
+        if ((user.balance ?? 0) < amount) throw new Error("Saldo tidak cukup");
+
+        const now = new Date();
+        const transactionToInsert: ITransaction = {
+          _id: createObjectId(),
+          userId: toObjectId(userId),
+          amount,
+          status: "completed",
+          type: "donation",
+          eventId,
+          description: message || "",
+          xenditId: "", // Provide appropriate value if available
+          invoiceId: "", // Provide appropriate value if available
+          invoiceUrl: "", // Provide appropriate value if available
+          createdAt: now,
+          updatedAt: now,
+        };
+        await db
+          .collection<ITransaction>(this.COLLECTION_NAME)
+          .insertOne(transactionToInsert, { session });
+        newTransaction = transactionToInsert;
+
+        await db
+          .collection("users")
+          .updateOne(
+            { _id: toObjectId(userId) },
+            { $inc: { balance: -amount } },
+            { session }
+          );
+
+        await db
+          .collection("events")
+          .updateOne(
+            { _id: new ObjectId(eventId) },
+            { $inc: { currentFunding: amount } },
+            { session }
+          );
+
+        // Ambil event terbaru setelah update
+        const updatedEvent = await db
+          .collection("events")
+          .findOne({ _id: new ObjectId(eventId) }, { session });
+
+        if (
+          updatedEvent &&
+          updatedEvent.currentFunding >= updatedEvent.targetFunding &&
+          updatedEvent.status !== "closed"
+        ) {
+          await db
+            .collection("events")
+            .updateOne(
+              { _id: new ObjectId(eventId) },
+              { $set: { status: "closed" } },
+              { session }
+            );
+        }
+      });
+      if (!newTransaction) throw new Error("Transaction failed");
+      return newTransaction;
     } finally {
       await session.endSession();
     }

@@ -1,4 +1,3 @@
-// src/app/api/tasks/[taskId]/route.ts
 import { NextResponse } from "next/server";
 import { updateTask, deleteTask } from "@/lib/data/task";
 

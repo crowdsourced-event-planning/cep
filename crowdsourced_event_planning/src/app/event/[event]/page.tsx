@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getEventBySlugOrId } from "@/lib/data/event";
 import { getWorkbooksByEventId } from "@/lib/data/workbook";
 import Card from "@/components/ui/Card";
-import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
+import { formatDateTime, formatCurrency } from "@/lib/utils/format";
 import FundingTracker from "@/components/client/FundingTracker";
 import CreateWorkbookButton from "@/components/client/CreateWorkbookButton";
 import WorkbookListClient from "@/components/client/WorkbookListClient";
@@ -13,9 +13,11 @@ import { UserEventModel } from "@/db/models/UserEventModel";
 import ShareEventButton from "@/components/client/ShareEventButton";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import EventGalleryWithModal from "@/components/client/EventGalleryWithModal";
-import EventActions from "@/components/client/EventActions"; // Buat komponen ini
+import EventActions from "@/components/client/EventActions";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import DonateNotification from "@/components/client/DonateNotification";
+import DonationButtonWithModal from "@/components/client/DonationButtonWithModal";
 
 interface EventPageProps {
   params: Promise<{
@@ -79,6 +81,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
     return (
       <div className="min-h-screen bg-gray-50 py-8">
+        <DonateNotification eventId={eventId} />
         <div className="container mx-auto px-4">
           {/* Breadcrumbs */}
           <Breadcrumbs
@@ -237,17 +240,22 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             </div>{" "}
             {/* Sidebar */}
             <div className="space-y-6">
-              {" "}
               {/* Funding Progress */}{" "}
               <FundingTracker
-                eventId={eventParam}
+                eventId={eventId}
                 targetAmount={event.targetFunding}
-                currentFunding={event.currentFunding}
               />
               {/* Event Actions */}
               <Card>
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold">Actions</h3>
+                  {/* Hanya tampilkan tombol donasi jika event masih open */}
+                  {event.status === "open" && (
+                    <DonationButtonWithModal
+                      eventSlug={event.slug}
+                      userId={userId}
+                    />
+                  )}
                   <EventActions
                     isCreator={isCreator}
                     event={{

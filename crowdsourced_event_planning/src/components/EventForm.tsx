@@ -7,7 +7,7 @@ import ImageModal from "@/components/ImageModal";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React from "react";
-import { formatCurrency } from "@/lib/utils/formatDate";
+import { formatCurrency, formatRupiahInput } from "@/lib/utils/format";
 
 type BudgetItem = {
   name: string;
@@ -62,14 +62,6 @@ type EventFormProps = {
   buttonLabel: string;
 };
 
-function formatRupiah(value: number | string) {
-  if (!value) return "";
-  return value
-    .toString()
-    .replace(/\D/g, "")
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
 const EventForm: React.FC<EventFormProps> = ({
   formData,
   budgetItems,
@@ -83,9 +75,7 @@ const EventForm: React.FC<EventFormProps> = ({
   setModalOpen,
   modalIndex,
   setModalIndex,
-  uploadingImage,
   setUploadingImage,
-  uploadingDoc,
   setUploadingDoc,
   loading,
   handleInputChange,
@@ -332,7 +322,7 @@ const EventForm: React.FC<EventFormProps> = ({
                         min="0"
                         value={
                           formData.targetFunding
-                            ? formatRupiah(formData.targetFunding)
+                            ? formatRupiahInput(formData.targetFunding)
                             : ""
                         }
                         onChange={handleFundingChange}
@@ -391,6 +381,7 @@ const EventForm: React.FC<EventFormProps> = ({
                           !currentBudgetItem.name ||
                           currentBudgetItem.amount <= 0
                         }
+                        className="cursor-pointer"
                       >
                         Add Budget Item
                       </Button>
@@ -448,13 +439,12 @@ const EventForm: React.FC<EventFormProps> = ({
               <div className="flex justify-end space-x-4">
                 <Button
                   type="submit"
-                  disabled={loading || uploadingImage || uploadingDoc}
+                  className={`... ${
+                    loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                  disabled={loading}
                 >
-                  {uploadingImage || uploadingDoc
-                    ? "Uploading.."
-                    : loading
-                    ? buttonLabel + "..."
-                    : buttonLabel}
+                  {buttonLabel}
                 </Button>
               </div>
             </form>

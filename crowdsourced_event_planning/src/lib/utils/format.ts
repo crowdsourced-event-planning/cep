@@ -31,6 +31,14 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+export function formatRupiahInput(value: number | string) {
+  if (!value) return "";
+  return value
+    .toString()
+    .replace(/\D/g, "")
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
 export function formatCompactNumber(num: number): string {
   return new Intl.NumberFormat("id-ID", {
     notation: "compact",

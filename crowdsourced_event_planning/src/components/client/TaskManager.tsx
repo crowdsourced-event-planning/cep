@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/components/ui/Button";
-import { formatDateTime } from "@/lib/utils/formatDate";
+import { formatDateTime } from "@/lib/utils/format";
 
 interface Task {
   _id: string;

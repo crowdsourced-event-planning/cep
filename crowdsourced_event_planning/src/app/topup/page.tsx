@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import AmountInput from "@/components/AmountInput";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -18,7 +18,7 @@ type Props = {
   }>;
 };
 
-export default async function CreateEventPage({ searchParams }: Props) {
+export default async function TopUpPage({ searchParams }: Props) {
   const { notif } = await searchParams;
 
   const handleProcessTopup = async (formData: FormData) => {
@@ -27,7 +27,7 @@ export default async function CreateEventPage({ searchParams }: Props) {
     const cookieStore = await cookies();
     const token = cookieStore.get("access_token")?.value;
 
-    const amount = formData.get("amount");
+    const amount = formData.get("amount")?.toString().replace(/\./g, "");
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/api/transaction/topup`,
       {
@@ -99,47 +99,25 @@ export default async function CreateEventPage({ searchParams }: Props) {
                     >
                       Amount *
                     </label>
-                    <Input
-                      id="amount"
-                      name="amount"
-                      type="number"
-                      required
-                      placeholder="100.000"
-                      className="text-lg"
-                      error={notif}
-                    />
+                    <div className="flex items-center">
+                      <AmountInput
+                        id="amount"
+                        name="amount"
+                        required
+                        placeholder="1.000.000"
+                        className="pl-8 text-lg"
+                        error={notif}
+                      />
+                    </div>
                   </div>
                 </div>
               </Card>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end space-x-4 cursor-pointer">
                 <Button type="submit">Process</Button>
               </div>
             </form>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Help */}
-            <Card>
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Need Help?
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Check out our event creation guide or contact support.
-                </p>
-                <div className="space-y-2">
-                  <Button variant="secondary" size="sm" className="w-full">
-                    View Guide
-                  </Button>
-                  <Button variant="secondary" size="sm" className="w-full">
-                    Contact Support
-                  </Button>
-                </div>
-              </div>
-            </Card>
           </div>
         </div>
       </div>

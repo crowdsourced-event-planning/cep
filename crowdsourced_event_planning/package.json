@@ -25,6 +25,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
+    "react-number-format": "^5.4.4",
     "react-select": "^5.10.1",
     "react-tooltip": "^5.28.1",
     "shadcn-ui": "^0.9.5",

@@ -5,9 +5,9 @@ import { cookies } from "next/headers";
 export default async function PanitiaRequestsPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ event: string }>;
 }) {
-  const { slug } = await params;
+  const { event: slug } = await params;
   const eventData = await getEventBySlugOrId(slug);
   const eventId = eventData?._id?.toString() || "";
   const cookieStore = await cookies();

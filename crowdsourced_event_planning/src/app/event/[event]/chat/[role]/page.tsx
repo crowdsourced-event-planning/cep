@@ -5,13 +5,12 @@ import { getEventBySlug } from "@/lib/data/event";
 import { isPanitiaApproved } from "@/lib/data/panitiaRequest";
 import { isUserJoinedEvent } from "@/lib/data/userevent";
 
-interface Props {
-  params: { event: string; role: string };
-}
-
-export default async function ChatPage({ params }: Props) {
-  const resolvedParams = await params;
-  const { event, role } = resolvedParams;
+export default async function ChatPage({
+  params,
+}: {
+  params: Promise<{ event: string; role: string }>;
+}) {
+  const { event, role } = await params;
   const currentUser = await getUserAction();
   if (!currentUser) return notFound();
 

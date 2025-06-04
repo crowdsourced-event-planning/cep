@@ -4,9 +4,9 @@ import { ObjectId } from "mongodb";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const { id } = await context.params;
   const db = await getDb();
   await db
     .collection("panitia_requests")

@@ -225,3 +225,15 @@ export default class UserModel {
     return user ? user.role : null;
   }
 }
+function validateObjectId(id: string, fieldName: string) {
+  if (!id || typeof id !== "string" || !ObjectId.isValid(id)) {
+    throw new CustomError(`${fieldName} is not a valid ObjectId`, 400);
+  }
+}
+
+function toObjectId(id: string): ObjectId {
+  if (!ObjectId.isValid(id)) {
+    throw new CustomError("Invalid ObjectId", 400);
+  }
+  return new ObjectId(id);
+}

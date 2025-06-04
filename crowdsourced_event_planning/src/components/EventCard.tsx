@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import JoinEventButtonWrapper from "./client/JoinEventButtonWrapper";
-import { formatDate, formatCurrency } from "@/lib/utils/formatDate";
+import { formatDate, formatCurrency } from "@/lib/utils/format";
 import { IEventSerialized } from "@/lib/data/event";
 
 interface EventCardProps {

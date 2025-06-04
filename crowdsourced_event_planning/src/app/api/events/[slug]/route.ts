@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { isValidObjectId } from "@/lib/utils/slug";
 import { getEventBySlugOrId } from "@/lib/data/event";
 
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await params;
+  const { slug } = await context.params;
 
   try {
     const event = await getEventBySlugOrId(slug);
@@ -35,10 +35,10 @@ export async function GET(
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await params;
+  const { slug } = await context.params;
 
   try {
     const db = await getDb();
@@ -69,10 +69,10 @@ export async function DELETE(
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await params;
+  const { slug } = await context.params;
 
   const db = await getDb();
   const data = await request.json();
