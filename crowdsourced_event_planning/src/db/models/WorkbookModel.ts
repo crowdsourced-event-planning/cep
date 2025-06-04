@@ -9,6 +9,7 @@ export interface IWorkbook {
   description: string;
   eventId: ObjectId;
   createdAt: Date;
+  // createdBy: ObjectId;
   updatedAt?: Date;
 }
 
@@ -41,6 +42,7 @@ export class WorkbookModel {
   static async createWorkbook(data: Partial<IWorkbook>): Promise<IWorkbook> {
     const db = await getDb();
     const now = new Date();
+
     const slug =
       data.slug ||
       slugify(data.name || "", { lower: true, strict: true }) ||
@@ -58,9 +60,11 @@ export class WorkbookModel {
       createdAt: now,
       updatedAt: now,
     };
+
     await db
       .collection<IWorkbook>(this.COLLECTION_NAME)
       .insertOne(workbookToInsert);
+
     return workbookToInsert;
   }
 

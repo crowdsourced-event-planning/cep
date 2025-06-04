@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  createFunding,
   getFundingsByEventId,
   getTotalFundingByEventId,
 } from "@/lib/data/funding";
-import { updateEventFunding } from "@/lib/data/event";
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,50 +28,6 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching funding:", error);
     return NextResponse.json(
       { error: "Failed to fetch funding" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { amount, userId, eventId, message, isAnonymous } = body;
-
-    if (!amount || !userId || !eventId) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    if (amount <= 0) {
-      return NextResponse.json(
-        { error: "Amount must be greater than 0" },
-        { status: 400 }
-      );
-    }
-
-    const fundingData = {
-      amount: Number(amount),
-      userId,
-      eventId,
-      message: message || "",
-      isAnonymous: Boolean(isAnonymous),
-      status: "completed", // Set status to completed instead of pending
-      createdAt: new Date(),
-    };
-
-    const newFunding = await createFunding(fundingData);
-
-    // Update the event's currentFunding field
-    await updateEventFunding(eventId, Number(amount));
-
-    return NextResponse.json(newFunding, { status: 201 });
-  } catch (error) {
-    console.error("Error creating funding:", error);
-    return NextResponse.json(
-      { error: "Failed to create funding" },
       { status: 500 }
     );
   }

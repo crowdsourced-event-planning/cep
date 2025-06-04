@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Card from "./ui/card";
 import { formatDate } from "@/lib/utils/formatDate";
 import type { WorkbookClient } from "./client/WorkbookListClient";
-import Button from "@/components/ui/button";
+import Button from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import ModalEditWorkbook from "./ModalEditWorkbook";

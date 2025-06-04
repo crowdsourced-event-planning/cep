@@ -17,6 +17,7 @@ export interface IEvent {
   targetFunding: number;
   currentFunding: number;
   creator: ObjectId;
+  participants: string[];
   budget: object[];
   gallery: string[];
   documents: string[];

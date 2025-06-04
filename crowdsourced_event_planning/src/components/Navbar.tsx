@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import PanitiaRequestNotification from "@/components/client/PanitiaRequestNotification";
 
@@ -26,7 +27,6 @@ export default function Navbar() {
     }
   };
 
-  // Logout handler
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -37,8 +37,16 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white shadow">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold text-blue-600">
-          Collabora
+        {/* Logo dan Teks */}
+        <Link href="/" className="flex items-center space-x-2">
+          <Image
+            src="/logo.webp"
+            alt="Collabora Logo"
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
+          <span className="text-2xl font-bold text-blue-600">Collabora</span>
         </Link>
         {/* Desktop Menu */}{" "}
         <div className="hidden md:flex space-x-6 items-center">
@@ -68,6 +76,14 @@ export default function Navbar() {
           ) : (
             <>
               <Link
+                href="/topup"
+                className={`font-medium hover:text-blue-600 transition-colors ${
+                  pathname === "/topup" ? "text-blue-600" : "text-gray-700"
+                }`}
+              >
+                Topup
+              </Link>
+              <Link
                 href="/profile"
                 className={`font-medium hover:text-blue-600 transition-colors ${
                   pathname === "/profile" ? "text-blue-600" : "text-gray-700"
@@ -93,6 +109,18 @@ export default function Navbar() {
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
         >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           <svg
             className="w-6 h-6"
             fill="none"
@@ -143,6 +171,15 @@ export default function Navbar() {
             ) : (
               <>
                 <Link
+                  href="/topup"
+                  className={`font-medium py-2 hover:text-blue-600 transition-colors ${
+                    pathname === "/topup" ? "text-blue-600" : "text-gray-700"
+                  }`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Topup
+                </Link>
+                <Link
                   href="/profile"
                   className={`font-medium py-2 hover:text-blue-600 transition-colors ${
                     pathname === "/profile" ? "text-blue-600" : "text-gray-700"
@@ -168,3 +205,4 @@ export default function Navbar() {
     </nav>
   );
 }
+

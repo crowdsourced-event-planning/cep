@@ -1,150 +1,126 @@
 import { ObjectId } from "mongodb";
-import { getDb } from "../config/mongodb";
-import {
-  validateObjectId,
-  toObjectId,
-  createObjectId,
-} from "../utils/validateObjectId";
+import { dbConnect, getDb } from "../config/mongodb";
+import { toObjectId, validateObjectId } from "../utils/validateObjectId";
+import { IUser } from "./UserModel";
 
 export interface ITransaction {
   _id?: ObjectId;
-  userId: string;
+  userId: ObjectId;
   amount: number;
   status: string;
   type: string;
-  eventId?: string;
-  midtransToken?: string;
-  midtransURL?: string;
-  description?: string;
+  xenditId: string;
+  invoiceId: string;
+  invoiceUrl: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export class TransactionModel {
+export default class TransactionModel {
   private static readonly COLLECTION_NAME = "transactions";
 
-  static async getTransactionsByUserId(
+  static async getPendingTransaction(
     userId: string
-  ): Promise<ITransaction[]> {
+  ): Promise<ITransaction[] | null> {
     validateObjectId(userId, "User ID");
     const db = await getDb();
     const transactions = await db
       .collection<ITransaction>(this.COLLECTION_NAME)
-      .find({ userId })
-      .sort({ createdAt: -1 })
+      .find({ userId: toObjectId(userId), status: "PENDING" })
       .toArray();
     return transactions;
   }
 
-  static async getTransactionById(
-    transactionId: string
-  ): Promise<ITransaction | null> {
-    validateObjectId(transactionId, "Transaction ID");
-    const db = await getDb();
-    const transaction = await db
-      .collection<ITransaction>(this.COLLECTION_NAME)
-      .findOne({ _id: toObjectId(transactionId) });
-    return transaction;
-  }
-
-  static async getTransactionsByEventId(
-    eventId: string
-  ): Promise<ITransaction[]> {
-    validateObjectId(eventId, "Event ID");
+  static async getHistoryTransaction(
+    userId: string
+  ): Promise<ITransaction[] | null> {
+    validateObjectId(userId, "User ID");
     const db = await getDb();
     const transactions = await db
       .collection<ITransaction>(this.COLLECTION_NAME)
-      .find({ eventId })
-      .sort({ createdAt: -1 })
+      .find({ userId: toObjectId(userId), status: { $ne: "PENDING" } })
       .toArray();
     return transactions;
   }
 
-  static async createTransaction(
-    data: Partial<ITransaction>
-  ): Promise<ITransaction> {
+  static async create(data: Partial<ITransaction>): Promise<ITransaction> {
     const db = await getDb();
     const now = new Date();
-    const transactionToInsert: ITransaction = {
-      _id: createObjectId(),
-      userId: data.userId!,
-      amount: data.amount!,
-      status: data.status || "pending",
-      type: data.type!,
-      eventId: data.eventId,
-      midtransToken: data.midtransToken,
-      midtransURL: data.midtransURL,
-      description: data.description || "",
+    const transactionData = {
+      ...data,
       createdAt: now,
       updatedAt: now,
     };
 
-    await db
-      .collection<ITransaction>(this.COLLECTION_NAME)
-      .insertOne(transactionToInsert);
-    return transactionToInsert;
-  }
-
-  static async updateTransaction(
-    transactionId: string,
-    data: Partial<ITransaction>
-  ): Promise<ITransaction | null> {
-    validateObjectId(transactionId, "Transaction ID");
-    const db = await getDb();
-
-    const updateData = {
-      ...data,
-      updatedAt: new Date(),
-    };
-
     const result = await db
       .collection<ITransaction>(this.COLLECTION_NAME)
-      .findOneAndUpdate(
-        { _id: toObjectId(transactionId) },
-        { $set: updateData },
-        { returnDocument: "after" }
-      );
+      .insertOne(transactionData as ITransaction);
 
-    return result || null;
-  }
-
-  static async updateTransactionStatus(
-    transactionId: string,
-    status: string
-  ): Promise<ITransaction | null> {
-    return this.updateTransaction(transactionId, { status });
-  }
-
-  static async deleteTransaction(transactionId: string): Promise<boolean> {
-    validateObjectId(transactionId, "Transaction ID");
-    const db = await getDb();
-
-    const result = await db
+    const createdTransaction = await db
       .collection<ITransaction>(this.COLLECTION_NAME)
-      .deleteOne({ _id: toObjectId(transactionId) });
-    return result.deletedCount > 0;
+      .findOne({ _id: result.insertedId });
+
+    if (!createdTransaction) {
+      throw new Error("Failed to create transaction");
+    }
+    return createdTransaction;
   }
 
-  static async getTotalTransactionsByType(type: string): Promise<number> {
-    const db = await getDb();
-    const result = await db
-      .collection<ITransaction>(this.COLLECTION_NAME)
-      .aggregate([
-        { $match: { type, status: "completed" } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ])
-      .toArray();
+  static async update({
+    status,
+    xenditId,
+  }: {
+    status: string;
+    xenditId: string;
+  }): Promise<string> {
+    const { client, db } = await dbConnect();
+    const session = client.startSession();
 
-    return result.length > 0 ? result[0].total : 0;
-  }
+    try {
+      await session.withTransaction(async () => {
+        const topup = await db
+          .collection<ITransaction>(this.COLLECTION_NAME)
+          .findOne({ xenditId }, { session });
 
-  static async deleteMany(
-    filter: Record<string, unknown> = {}
-  ): Promise<boolean> {
-    const db = await getDb();
-    const result = await db
-      .collection<ITransaction>(this.COLLECTION_NAME)
-      .deleteMany(filter);
-    return result.acknowledged;
+        if (!topup) {
+          throw new Error("Topup not found");
+        }
+
+        if (status === "PAID") {
+          await db
+            .collection<ITransaction>(this.COLLECTION_NAME)
+            .updateOne({ xenditId }, { $set: { status } }, { session });
+
+          const user = await db
+            .collection<IUser>("users")
+            .findOne({ _id: topup.userId }, { session });
+
+          if (!user) {
+            throw new Error("User not found");
+          }
+
+          await db.collection<IUser>("users").updateOne(
+            { _id: topup.userId },
+            {
+              $set: {
+                balance: (user.balance || 0) + topup.amount,
+              },
+            },
+            { session }
+          );
+        } else {
+          await db
+            .collection<ITransaction>(this.COLLECTION_NAME)
+            .updateOne({ xenditId }, { $set: { status } }, { session });
+        }
+      });
+
+      return "Update transaction successful";
+    } catch (err) {
+      console.error("Transaction failed:", err);
+      throw new Error("Failed to update transaction");
+    } finally {
+      await session.endSession();
+    }
   }
 }

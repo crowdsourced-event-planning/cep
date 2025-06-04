@@ -12,7 +12,7 @@ export interface Event {
   status: string;
   targetFunding: number;
   currentFunding: number;
-  creator: string;
+  createdBy: string;
   budget: object[];
   gallery: string[];
   documents: string[];
