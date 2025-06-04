@@ -22,3 +22,13 @@ export async function getPanitiaRequestByUserAndWorkbook(
     workbookId: new ObjectId(workbookId),
   });
 }
+
+export async function isPanitiaApproved(eventId: string, userId: string) {
+  const db = await getDb();
+  const found = await db.collection("panitia_requests").findOne({
+    eventId: new ObjectId(eventId),
+    userId: new ObjectId(userId),
+    status: "approved",
+  });
+  return !!found;
+}

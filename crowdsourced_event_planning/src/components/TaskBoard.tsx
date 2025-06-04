@@ -207,7 +207,7 @@ export default function TaskBoard({
                               <SelectTrigger className="w-[140px]">
                                 <SelectValue placeholder="Pilih" />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent searchable>
                                 {participants.map((p) => (
                                   <SelectItem
                                     key={p._id?.toString()}

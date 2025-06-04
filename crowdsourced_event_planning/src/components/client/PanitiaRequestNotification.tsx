@@ -78,28 +78,34 @@ export default function PanitiaRequestNotification({
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-[420px] bg-white rounded-xl shadow-lg border z-50 max-h-[60vh] overflow-y-auto">
-          <div className="p-4 border-b font-bold text-blue-700">
-            Permintaan Panitia
+        <div className="absolute right-0 mt-2 w-[420px] bg-white rounded-xl shadow-lg z-50 max-h-[60vh] overflow-y-auto">
+          <div className="p-4 border-b border-gray-300 font-bold text-black-700">
+            Request for Committee Members
           </div>
           {loading ? (
             <div className="p-4 text-gray-500">Loading...</div>
           ) : pendingRequests.length === 0 ? (
-            <div className="p-4 text-gray-500">Tidak ada permintaan.</div>
+            <div className="p-4 text-gray-500">
+              There are no committee requests for your event
+            </div>
           ) : (
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-gray-500 border-b">
-                  <th className="py-2 px-2">Nama Event</th>
-                  <th className="py-2 px-2">Nama Orang</th>
-                  <th className="py-2 px-2">Aksi</th>
+                <tr className="text-left text-xs text-gray-500 border-b border-gray-300">
+                  <th className="py-2 px-2">Event Name</th>
+                  <th className="py-2 px-2">User</th>
+                  <th className="py-2 px-2">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {pendingRequests.map((req) => (
                   <tr key={req._id} className="border-b last:border-b-0">
-                    <td className="py-2 px-2">{req.eventTitle}</td>
-                    <td className="py-2 px-2">{req.userName}</td>
+                    <td className="py-2 px-2 max-w-[120px] truncate whitespace-nowrap overflow-hidden">
+                      {req.eventTitle}
+                    </td>
+                    <td className="py-2 px-2 max-w-[120px] truncate whitespace-nowrap overflow-hidden">
+                      {req.userName}
+                    </td>
                     <td className="py-2 px-2">
                       <div className="flex gap-2">
                         <button
@@ -121,12 +127,12 @@ export default function PanitiaRequestNotification({
               </tbody>
             </table>
           )}
-          <div className="p-3 border-t text-right">
+          <div className="p-3 border-t border-gray-300 text-right">
             <a
               href="/panitia-requests"
-              className="text-blue-600 hover:underline text-sm font-medium"
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              Lihat Semua
+              See All
             </a>
           </div>
         </div>

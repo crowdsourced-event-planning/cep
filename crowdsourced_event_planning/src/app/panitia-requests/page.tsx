@@ -72,14 +72,14 @@ export default function AllPanitiaRequestsPage() {
   return (
     <div className="container mx-auto px-4 py-8 min-h-[60vh]">
       <Toaster />
-      <h1 className="text-3xl font-bold mb-8 text-blue-700 text-center">
-        Permintaan Jadi Panitia
+      <h1 className="text-3xl font-bold mb-8 text-black-700">
+        Request for Committee Members
       </h1>
       {loading ? (
         <div className="text-gray-500 text-center py-12">Loading...</div>
       ) : Object.keys(grouped).length === 0 ? (
         <div className="text-gray-400 text-center py-12">
-          Tidak ada permintaan panitia untuk event Anda.
+          There are no committee requests for your event
         </div>
       ) : (
         Object.entries(grouped).map(([eventId, group]) => (
@@ -87,7 +87,7 @@ export default function AllPanitiaRequestsPage() {
             key={eventId}
             className="mb-12 bg-white rounded-2xl shadow-lg border border-blue-100 p-6"
           >
-            <h2 className="text-xl font-semibold mb-6 text-blue-600 flex items-center gap-2">
+            <h2 className="text-xl font-semibold mb-6 text-black-600 flex items-center gap-2">
               <svg
                 className="w-6 h-6 text-blue-400"
                 fill="none"
@@ -124,7 +124,7 @@ export default function AllPanitiaRequestsPage() {
                       <div className="font-semibold text-gray-800 text-base">
                         {req.userName || (
                           <span className="italic text-gray-400">
-                            Tanpa Nama
+                            Without Name
                           </span>
                         )}
                       </div>
@@ -143,10 +143,10 @@ export default function AllPanitiaRequestsPage() {
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
                         req.status === "pending"
-                          ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                          ? "bg-yellow-100 text-yellow-600 border border-yellow-200"
                           : req.status === "approved"
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "bg-red-100 text-red-700 border border-red-200"
+                          ? "bg-green-100 text-green-600 border border-green-200"
+                          : "bg-red-100 text-red-600 border border-red-200"
                       }`}
                     >
                       {req.status === "pending"
@@ -160,15 +160,15 @@ export default function AllPanitiaRequestsPage() {
                     <div className="flex gap-2 mt-4">
                       <button
                         onClick={() => handleAction(req._id, "approve")}
-                        className="flex-1 px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-semibold shadow transition"
+                        className="flex-1 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow transition"
                       >
-                        Terima
+                        Approve
                       </button>
                       <button
                         onClick={() => handleAction(req._id, "reject")}
-                        className="flex-1 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold shadow transition"
+                        className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold shadow transition"
                       >
-                        Tolak
+                        Reject
                       </button>
                     </div>
                   )}
@@ -179,7 +179,7 @@ export default function AllPanitiaRequestsPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Buka Task Board
+                      Open Task Board
                     </Link>
                   )}
                   {/* Jika rejected, tidak ada aksi */}

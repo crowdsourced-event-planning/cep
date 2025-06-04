@@ -2,21 +2,20 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getEventBySlugOrId } from "@/lib/data/event";
 import { getWorkbooksByEventId } from "@/lib/data/workbook";
-import {
-  getRatingsByEventId,
-  getAverageRatingByEventId,
-} from "@/lib/data/rating";
 import Card from "@/components/ui/Card";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
 import FundingTracker from "@/components/client/FundingTracker";
 import CreateWorkbookButton from "@/components/client/CreateWorkbookButton";
 import WorkbookListClient from "@/components/client/WorkbookListClient";
 import { cookies } from "next/headers";
+import { isPanitiaApproved } from "@/lib/data/panitiaRequest";
 import { UserEventModel } from "@/db/models/UserEventModel";
 import ShareEventButton from "@/components/client/ShareEventButton";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import EventGalleryWithModal from "@/components/client/EventGalleryWithModal";
 import EventActions from "@/components/client/EventActions"; // Buat komponen ini
+import Link from "next/link";
+import Button from "@/components/ui/Button";
 
 interface EventPageProps {
   params: Promise<{
@@ -57,18 +56,26 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       notFound();
     }
 
-    const eventId = event._id?.toString() || "";
-    const [workbooks] = await Promise.all([
-      getWorkbooksByEventId(eventId),
-      getRatingsByEventId(eventId),
-      getAverageRatingByEventId(eventId),
-    ]);
-
     const userId = (await cookies()).get("x-user-id")?.value || "";
-    const isCreator = event.creator?.toString() === userId;
+    const eventId = event._id?.toString() || "";
+
+    // Fetch workbooks for the event
+    const workbooks = await getWorkbooksByEventId(eventId);
+
+    // Cek apakah user panitia approved
+    const isPanitia = userId ? await isPanitiaApproved(eventId, userId) : false;
+    // Cek apakah user sudah join event (member)
     const isJoined = userId
       ? await UserEventModel.isUserJoinedEvent(userId, eventId)
       : false;
+    // Cek apakah user adalah creator
+    const isCreator = event.creator?.toString() === userId;
+
+    // Define the type for budget items
+    type BudgetItem = {
+      name?: string;
+      amount?: number;
+    };
 
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -137,20 +144,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Description</h3>
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {event.description}
-                    </p>
-                  </div>
-
-                  {event.budget && event.budget.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">
-                        Budget Breakdown
-                      </h3>
-                      <div className="space-y-2">
-                        {event.budget.map(
-                          (item: { name?: string; amount?: number }, index) => (
+                    {event.budget && event.budget.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">
+                          Budget Breakdown
+                        </h3>
+                        <div className="space-y-2">
+                          {(event.budget as BudgetItem[]).map((item, index) => (
                             <div
                               key={index}
                               className="flex justify-between items-center bg-gray-50 p-3 rounded"
@@ -162,11 +162,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                                 {formatCurrency(item.amount || 0)}
                               </span>
                             </div>
-                          )
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </Card>
 
@@ -269,46 +269,24 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <Card>
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Event Discussion</h3>
-                  <div className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-600">
                     Join the event to participate in discussions!
-                  </div>
+                  </p>
+
+                  {(isPanitia || isCreator) && (
+                    <div className="w-full">
+                      <Link href={`/event/${event.slug}/chat/admin`}>
+                        <Button className="w-full">Group Chat Panitia</Button>
+                      </Link>
+                    </div>
+                  )}
+                  {(isJoined || isPanitia || isCreator) && (
+                    <Link href={`/event/${event.slug}/chat/member`}>
+                      <Button className="w-full">Group Chat Member</Button>
+                    </Link>
+                  )}
                 </div>
               </Card>
-              {/* Ratings
-              <Card>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Community Rating</h3>
-
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-yellow-500 mb-1">
-                      {averageRating.toFixed(1)}
-                    </div>
-                    <div className="flex justify-center space-x-1 mb-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg
-                          key={star}
-                          className={`w-5 h-5 ${
-                            star <= averageRating
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }`}
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {ratings.length} reviews
-                    </p>
-                  </div>
-
-                  <Button variant="secondary" className="w-full">
-                    Write Review
-                  </Button>
-                </div>
-              </Card> */}
             </div>
           </div>
         </div>

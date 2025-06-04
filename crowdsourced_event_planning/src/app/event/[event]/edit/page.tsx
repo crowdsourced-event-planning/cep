@@ -60,7 +60,7 @@ export default function EditEventPage() {
   useEffect(() => {
     let ignore = false;
     setLoading(true);
-    fetch(`/api/events/${event}`)
+    fetch(`/api/events/${event}`, { cache: "no-store" })
       .then(async (res) => {
         if (!res.ok) throw new Error("Event not found");
         return res.json();
@@ -150,6 +150,8 @@ export default function EditEventPage() {
       });
       if (res.ok) {
         toast.success("Event berhasil diupdate!");
+        router.replace(`/event/${event}`);
+        router.refresh();
         setTimeout(() => router.back(), 300);
       } else {
         toast.error("Gagal update event.");

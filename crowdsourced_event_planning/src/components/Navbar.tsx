@@ -45,6 +45,7 @@ export default function Navbar() {
             width={40}
             height={40}
             className="rounded-full"
+            style={{ height: "auto" }}
           />
           <span className="text-2xl font-bold text-blue-600">Collabora</span>
         </Link>
