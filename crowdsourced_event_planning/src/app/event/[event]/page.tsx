@@ -67,6 +67,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     // Cek apakah user panitia approved
     const isPanitia = userId ? await isPanitiaApproved(eventId, userId) : false;
     // Cek apakah user sudah join event (member)
+    // const isCreator = event.creator?.toString() === userId;
+    // const cekRole = await UserEventModel.getUserRoleInEvent(userId, eventId);
+    // const isAdmin = cekRole === "admin";
     const isJoined = userId
       ? await UserEventModel.isUserJoinedEvent(userId, eventId)
       : false;
@@ -293,6 +296,21 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       <Button className="w-full">Group Chat Member</Button>
                     </Link>
                   )}
+                  {/* <p className="text-sm text-gray-600 mb-4">
+                    Join the event to participate in discussions!
+                  </p>
+                  <div className="flex space-x-2">
+                    {(isCreator || isAdmin) && (
+                      <Link href={`/event/${eventParam}/chat/admin`} passHref>
+                        <Button className="w-full">Group Chat Admin</Button>
+                      </Link>
+                    )}
+                    {(isCreator || isJoined) && (
+                      <Link href={`/event/${eventParam}/chat/member`} passHref>
+                        <Button className="w-full">Group Chat Member</Button>
+                      </Link>
+                    )}
+                  </div> */}
                 </div>
               </Card>
             </div>

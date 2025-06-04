@@ -1,49 +1,53 @@
 import { getUserAction } from "./action";
 import ChatPageClient from "./ChatPageClient";
 import { notFound } from "next/navigation";
-import { getEventBySlug } from "@/lib/data/event";
-import { isPanitiaApproved } from "@/lib/data/panitiaRequest";
-import { isUserJoinedEvent } from "@/lib/data/userevent";
+import { UserEventModel } from "@/db/models/UserEventModel";
+import { getEventBySlugOrId } from "@/lib/data/event";
 
-export default async function ChatPage({
-  params,
-}: {
-  params: Promise<{ event: string; role: string }>;
-}) {
-  const { event, role } = await params;
+interface Props {
+  params: Promise<{
+    event: string;
+    role: string;
+  }>;
+}
+
+export default async function ChatPage({ params }: Props) {
+  const { event: eventParam, role } = await params;
+
   const currentUser = await getUserAction();
-  if (!currentUser) return notFound();
-
-  const eventData = await getEventBySlug(event);
-  if (!eventData) return notFound();
-
-  const eventId = eventData._id?.toString() || "";
-  const isPanitia = await isPanitiaApproved(eventId, currentUser._id);
-
-  // Tambahkan pengecekan join event di sini
-  const isJoined = await isUserJoinedEvent(eventId, currentUser._id);
-
-  // Panitia (approved) dan creator boleh akses room admin
-  if (
-    role === "admin" &&
-    !(isPanitia || eventData.creator?.toString() === currentUser._id)
-  ) {
+  if (!currentUser) {
     return notFound();
   }
 
-  // Semua yang sudah join event, panitia, atau creator boleh akses member
-  if (
-    role === "member" &&
-    !(
-      isJoined ||
-      isPanitia ||
-      eventData.creator?.toString() === currentUser._id
-    )
-  ) {
+  const event = await getEventBySlugOrId(eventParam);
+  if (!event) {
+    return notFound();
+  }
+
+  const isCreator = currentUser._id === event.creator.toString();
+
+  const roleUser = await UserEventModel.getUserRoleInEvent(
+    currentUser._id,
+    event._id!.toString()
+  );
+
+  if (isCreator === false && !roleUser) {
+    return notFound();
+  }
+
+  const isAdmin = roleUser === "admin";
+  const isTryingToAccessAdminRoom = role === "admin";
+
+  // Member tidak boleh akses room admin
+  if (isAdmin === false && isCreator === false && isTryingToAccessAdminRoom) {
     return notFound();
   }
 
   return (
-    <ChatPageClient currentUser={currentUser} eventId={eventId} role={role} />
+    <ChatPageClient
+      currentUser={currentUser}
+      eventId={event._id!.toString()}
+      role={role}
+    />
   );
 }
