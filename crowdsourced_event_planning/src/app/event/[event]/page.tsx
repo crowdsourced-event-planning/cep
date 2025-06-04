@@ -17,6 +17,8 @@ import ShareEventButton from "@/components/client/ShareEventButton";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import EventGalleryWithModal from "@/components/client/EventGalleryWithModal";
 import EventActions from "@/components/client/EventActions"; // Buat komponen ini
+import Link from "next/link";
+import Button from "@/components/ui/Button";
 
 interface EventPageProps {
   params: Promise<{
@@ -66,6 +68,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
     const userId = (await cookies()).get("x-user-id")?.value || "";
     const isCreator = event.creator?.toString() === userId;
+    const cekRole = await UserEventModel.getUserRoleInEvent(userId, eventId);
+    const isAdmin = cekRole === "admin";
     const isJoined = userId
       ? await UserEventModel.isUserJoinedEvent(userId, eventId)
       : false;
@@ -269,8 +273,20 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <Card>
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Event Discussion</h3>
-                  <div className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-600 mb-4">
                     Join the event to participate in discussions!
+                  </p>
+                  <div className="flex space-x-2">
+                    {(isCreator || isAdmin) && (
+                      <Link href={`/event/${eventParam}/chat/admin`} passHref>
+                        <Button className="w-full">Group Chat Admin</Button>
+                      </Link>
+                    )}
+                    {(isCreator || isJoined) && (
+                      <Link href={`/event/${eventParam}/chat/member`} passHref>
+                        <Button className="w-full">Group Chat Member</Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </Card>

@@ -86,7 +86,7 @@ export default class TransactionModel {
           throw new Error("Topup not found");
         }
 
-        if (status === "PAID") {
+        if (status === "PAID" || status === "SETTLED") {
           await db
             .collection<ITransaction>(this.COLLECTION_NAME)
             .updateOne({ xenditId }, { $set: { status } }, { session });
