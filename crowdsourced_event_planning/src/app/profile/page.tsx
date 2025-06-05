@@ -7,6 +7,9 @@ import { redirect } from "next/navigation";
 import { BadgeDollarSign, Mail } from "lucide-react";
 import multiavatar from "@multiavatar/multiavatar/esm";
 import LogoutButton from "@/components/client/LogoutButton";
+import { formatCurrency } from "@/lib/utils/format";
+import EventModel from "@/db/models/EventModel";
+import ProfileHistorySection from "@/components/client/ProfileHistorySection";
 
 interface IUser {
   _id?: ObjectId;
@@ -28,7 +31,7 @@ interface ITransaction {
   userId: ObjectId;
   amount: number;
   status: string;
-  type: string; // topup / refund
+  type: string; // payment type: topup or refund
   xenditId: string;
   invoiceId: string;
   invoiceUrl: string;
@@ -38,8 +41,8 @@ interface ITransaction {
 
 interface IFunding {
   _id?: ObjectId;
-  eventId: string;
-  userId: string;
+  eventId: ObjectId;
+  userId: ObjectId;
   amount: number;
   createdAt?: Date;
   updatedAt?: Date;
@@ -71,7 +74,7 @@ export default async function ProfilePage() {
 
   const fundings = await db
     .collection<IFunding>("fundings")
-    .find({ userId: user._id?.toString() })
+    .find({ userId: user._id })
     .sort({ createdAt: -1 })
     .toArray();
 
@@ -116,6 +119,43 @@ export default async function ProfilePage() {
     }
   };
 
+  // After getting funding records:
+  const fundingWithEvent = await Promise.all(
+    fundings.map(async (fund) => {
+      const event = await EventModel.getById(fund.eventId); // ensure getById method exists
+      return {
+        ...fund,
+        eventTitle: event?.title || fund.eventId.toString(),
+        eventSlug: event?.slug || null,
+      };
+    })
+  );
+
+  const serializedHistoryTransactions = historyTransactions.map((tx) => ({
+    ...tx,
+    _id: tx._id?.toString() ?? "",
+    userId: tx.userId?.toString() ?? "",
+    createdAt: tx.createdAt ? tx.createdAt.toString() : undefined,
+    updatedAt: tx.updatedAt ? tx.updatedAt.toString() : undefined,
+  }));
+
+  const serializedFundingWithEvent = fundingWithEvent.map((fund) => ({
+    ...fund,
+    _id: fund._id?.toString() ?? "",
+    userId: fund.userId?.toString() ?? "",
+    eventId: fund.eventId?.toString() ?? "",
+    createdAt: fund.createdAt ? fund.createdAt.toString() : undefined,
+    updatedAt: fund.updatedAt ? fund.updatedAt.toString() : undefined,
+  }));
+
+  const serializedWaitingPayments = waitingPayments.map((tx) => ({
+    ...tx,
+    _id: tx._id?.toString() ?? "",
+    userId: tx.userId?.toString() ?? "",
+    createdAt: tx.createdAt ? tx.createdAt.toString() : undefined,
+    updatedAt: tx.updatedAt ? tx.updatedAt.toString() : undefined,
+  }));
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       {/* Profile Card */}
@@ -131,150 +171,47 @@ export default async function ProfilePage() {
               />
             </div>
           </div>
-          <div className="flex-1 w-full">
-            <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              {user.name}
-              {user.role && (
-                <span className="ml-2 px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold uppercase">
-                  {user.role}
+          <div className="flex-1 w-full flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                {user.name}
+                {user.role && (
+                  <span className="ml-2 px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold uppercase">
+                    {user.role}
+                  </span>
+                )}
+                {user.badge && (
+                  <span className="ml-2 px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">
+                    {user.badge}
+                  </span>
+                )}
+              </h1>
+              <div className="flex items-center gap-2 text-gray-600">
+                <Mail size={16} />
+                <span>{user.email}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <BadgeDollarSign size={18} className="text-green-600" />
+                <span className="font-semibold text-lg text-green-700">
+                  {formatCurrency(user.balance ?? 0)}
                 </span>
-              )}
-              {user.badge && (
-                <span className="ml-2 px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">
-                  {user.badge}
-                </span>
-              )}
-            </h1>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Mail size={16} />
-              <span>{user.email}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 mt-2">
-              <BadgeDollarSign size={18} className="text-green-600" />
-              <span className="font-semibold text-lg text-green-700">
-                Rp {user.balance?.toLocaleString() ?? 0}
-              </span>
-            </div>
-            {/* Logout button: full width on mobile, auto on desktop */}
-            <div className="mt-6 w-full">
+            {/* Logout button: full width on mobile, right & center on desktop */}
+            <div className="mt-6 w-full md:mt-0 md:w-auto md:flex md:justify-end">
               <LogoutButton />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Waiting Payment */}
-      <section>
-        <h2 className="text-xl font-semibold mb-2">Waiting Payment</h2>
-        <div className="bg-white rounded-xl shadow divide-y">
-          {waitingPayments.length === 0 ? (
-            <p className="p-4 text-gray-500">No pending payments.</p>
-          ) : (
-            waitingPayments.map((tx) => (
-              <div
-                key={tx._id?.toString()}
-                className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
-              >
-                <div>
-                  <p>
-                    <strong>Amount:</strong> Rp {tx.amount.toLocaleString()}
-                  </p>
-                  <p>
-                    <strong>Status:</strong>{" "}
-                    <span className="inline-block px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">
-                      {tx.status}
-                    </span>
-                  </p>
-                </div>
-                <form action={handleCheck}>
-                  <input type="hidden" name="xenditId" value={tx.xenditId} />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition cursor-pointer"
-                  >
-                    Bayar Sekarang
-                  </button>
-                </form>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Transaction History */}
-      <section>
-        <h2 className="text-xl font-semibold mb-2">Transaction History</h2>
-        <div className="bg-white rounded-xl shadow divide-y">
-          {historyTransactions.length === 0 ? (
-            <p className="p-4 text-gray-500">No transaction history.</p>
-          ) : (
-            historyTransactions.map((tx) => (
-              <div
-                key={tx._id?.toString()}
-                className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
-              >
-                <div>
-                  <p>
-                    <strong>Type:</strong>{" "}
-                    <span className="capitalize">{tx.type}</span>
-                  </p>
-                  <p>
-                    <strong>Amount:</strong> Rp {tx.amount.toLocaleString()}
-                  </p>
-                  <p>
-                    <strong>Status:</strong>{" "}
-                    <span
-                      className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                        tx.status === "SUCCESS"
-                          ? "bg-green-100 text-green-700"
-                          : tx.status === "FAILED"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {tx.status}
-                    </span>
-                  </p>
-                </div>
-                <p className="text-sm text-gray-500">
-                  {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "-"}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* Funding History */}
-      <section>
-        <h2 className="text-xl font-semibold mb-2">Funding History</h2>
-        <div className="bg-white rounded-xl shadow divide-y">
-          {fundings.length === 0 ? (
-            <p className="p-4 text-gray-500">No funding activity.</p>
-          ) : (
-            fundings.map((fund) => (
-              <div
-                key={fund._id?.toString()}
-                className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
-              >
-                <div>
-                  <p>
-                    <strong>Event ID:</strong> {fund.eventId}
-                  </p>
-                  <p>
-                    <strong>Amount:</strong> Rp {fund.amount.toLocaleString()}
-                  </p>
-                </div>
-                <p className="text-sm text-gray-500">
-                  {fund.createdAt
-                    ? new Date(fund.createdAt).toLocaleString()
-                    : "-"}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
+      {/* History Section (Transaction & Funding) */}
+      <ProfileHistorySection
+        waitingPayments={serializedWaitingPayments}
+        transactions={serializedHistoryTransactions}
+        fundings={serializedFundingWithEvent}
+        handleCheck={handleCheck}
+      />
     </div>
   );
 }

@@ -20,7 +20,7 @@ export default function FundingTracker({
   // Fetch currentFunding dari API
   const fetchCurrentFunding = useCallback(async () => {
     try {
-      const response = await fetch(`/api/funding?eventId=${eventId}`);
+      const response = await fetch(`/api/fundings?eventId=${eventId}`);
       if (!response.ok) throw new Error("Failed to fetch funding");
       const data = await response.json();
       setCurrentFunding(data.currentFunding || 0);

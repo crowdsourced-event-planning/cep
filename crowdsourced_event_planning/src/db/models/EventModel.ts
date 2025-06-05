@@ -79,7 +79,7 @@ export default class EventModel {
     return createdEvent;
   }
 
-  static async getById(id: string): Promise<IEvent | null> {
+  static async getById(id: ObjectId | string): Promise<IEvent | null> {
     const db = await getDb();
     return db
       .collection<IEvent>(this.COLLECTION_NAME)

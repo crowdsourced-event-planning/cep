@@ -197,7 +197,7 @@ export default class TransactionModel {
           _id: createObjectId(),
           userId: toObjectId(userId),
           amount,
-          status: "completed",
+          status: "COMPLETED",
           type: "donation",
           eventId,
           description: message || "",
@@ -211,6 +211,18 @@ export default class TransactionModel {
           .collection<ITransaction>(this.COLLECTION_NAME)
           .insertOne(transactionToInsert, { session });
         newTransaction = transactionToInsert;
+
+        // Insert ke fundings
+        await db.collection("fundings").insertOne(
+          {
+            eventId: new ObjectId(eventId),
+            userId: new ObjectId(userId),
+            amount,
+            createdAt: now,
+            updatedAt: now,
+          },
+          { session }
+        );
 
         await db
           .collection("users")
@@ -249,6 +261,27 @@ export default class TransactionModel {
       });
       if (!newTransaction) throw new Error("Transaction failed");
       return newTransaction;
+    } catch (err) {
+      // Jika error, simpan transaksi gagal
+      const now = new Date();
+      const failedTransaction: ITransaction = {
+        _id: createObjectId(),
+        userId: toObjectId(userId),
+        amount,
+        status: "FAILED",
+        type: "donation",
+        eventId,
+        description: message || "",
+        xenditId: "",
+        invoiceId: "",
+        invoiceUrl: "",
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db
+        .collection<ITransaction>(this.COLLECTION_NAME)
+        .insertOne(failedTransaction);
+      throw err;
     } finally {
       await session.endSession();
     }
