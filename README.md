@@ -34,13 +34,13 @@ Collabora is a modern crowdsourced event planning platform that empowers Creator
 
 - **Frontend & Backend:** [Next.js (TypeScript)](https://nextjs.org/)
 - **Database:** [MongoDB](https://www.mongodb.com/) (using native MongoDB driver)
-- **Real-time:** [Socket.IO](https://socket.io/) for chat and funding updates
+- **Real-time:** [Socket.IO](https://socket.io/) for chat and funding updates, [Firebase](https://firebase.google.com/) for realtime database
 - **Authentication:** [NextAuth.js](https://next-auth.js.org/) (Email & Google OAuth)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/)
-- **Payment Gateway:** [Midtrans](https://midtrans.com/), [Xendit](https://xendit.co/) (via `xendit-node`)
+- **Payment Gateway:** [Xendit](https://xendit.co/) (via `xendit-node`)
 - **Cloud Storage:** [Cloudinary](https://cloudinary.com/) for images and documents
 - **Utilities:** [Axios](https://axios-http.com/), [Zod](https://zod.dev/) for validation, [date-fns](https://date-fns.org/)
-- **Other:** [Firebase](https://firebase.google.com/) (optional, for real-time features), [SweetAlert2](https://sweetalert2.github.io/) for alerts
+- **Other:** [SweetAlert2](https://sweetalert2.github.io/) for alerts
 
 ## 📦 Project Structure
 
