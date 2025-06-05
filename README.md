@@ -18,14 +18,13 @@ Collabora is a modern crowdsourced event planning platform that empowers Creator
 
 - **Participation & Collaboration:**
 
-  - Investors contribute funds via integrated payment gateways (Midtrans, Xendit).
+  - Investors contribute funds via integrated payment gateway (Xendit).
   - Committee apply to volunteer; Creators approve/reject applications.
   - Real-time chat and group discussion using Socket.IO.
 
-- **Reputation & Rating:**
+- **Reputation:**
 
-  - Investors rate Creators after events (score & comment).
-  - Creator profiles display ratings, event count, and total funds raised.
+  - Creator profiles display event count and total funds raised.
 
 - **Security & Transparency:**
   - Track all funding and top-up transactions.
@@ -57,8 +56,8 @@ Collabora is a modern crowdsourced event planning platform that empowers Creator
 2. **Register/Login:** Users sign up or log in (choose Creator or User role).
 3. **Create & Manage Events:** Creators set up events, budgets, and documentation.
    - **Generate Description:** When entering the event title, click the AI icon to automatically generate a suggested description.
-4. **Participate:** Investors fund events; Panitia apply to volunteer.
-5. **Approval:** Creators approve/reject Panitia applications.
+4. **Participate:** Investors fund events; Committee apply to volunteer.
+5. **Approval:** Creators approve/reject Committee applications.
 6. **Execution & Proof:** Creators upload event proof (photos, docs).
 7. **Rating:** Investors rate Creators post-event.
 
