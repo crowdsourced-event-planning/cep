@@ -90,9 +90,8 @@ export async function POST(req: NextRequest) {
 
 - **GitHub:** [Frontend & Backend](https://github.com/crowdsourced-event-planning/cep)
 - **Kanban:** [Coda Board](https://coda.io/d/Final-Project-2025-RMT-60-V2_dEnd9ZsSZLH/Team-2_surVlTR3)
-- **Design:** [Figma Mockup](https://www.figma.com/design/DvfngDgStIgjyrZcnQ1zYK/Untitled?node-id=0-1&t=Ab2NHWOINi3OKdnu-1)
 - **Database Schema:** [Eraser](https://app.eraser.io/workspace/uGw4kHsFWT9ICs6hxo5a)
-- **Live App:** [collabora-henna.vercel.app](https://collabora-henna.vercel.app/)
+- **Live App:** [https://collabora.web.id/](https://collabora.web.id/)
 
 ---
 
