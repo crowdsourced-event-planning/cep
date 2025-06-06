@@ -1,6 +1,6 @@
 # Collabora
 
-Collabora is a modern crowdsourced event planning platform that empowers Creators and Users (Investors & Panitia/Volunteers) to collaborate transparently in organizing impactful events. The platform features real-time funding, task-based budgeting, live chat, and a reputation system to ensure trust and accountability.
+Collabora is a modern crowdsourced event planning platform that empowers Creators and Users (Investors & Committee/Volunteers) to collaborate transparently in organizing impactful events. The platform features real-time funding, task-based budgeting, live chat, and a reputation system to ensure trust and accountability.
 
 ## 🚀 Features
 
@@ -20,7 +20,7 @@ Collabora is a modern crowdsourced event planning platform that empowers Creator
 
   - Investors contribute funds via integrated payment gateway (Xendit).
   - Committee apply to volunteer; Creators approve/reject applications.
-  - Real-time chat and group discussion using Socket.IO.
+  - Real-time chat and group discussion using Socket.IO and Firebase.
 
 - **Reputation:**
 
@@ -59,7 +59,6 @@ Collabora is a modern crowdsourced event planning platform that empowers Creator
 4. **Participate:** Investors fund events; Committee apply to volunteer.
 5. **Approval:** Creators approve/reject Committee applications.
 6. **Execution & Proof:** Creators upload event proof (photos, docs).
-7. **Rating:** Investors rate Creators post-event.
 
 ## 🧑‍💻 Example API Route
 
@@ -94,5 +93,14 @@ export async function POST(req: NextRequest) {
 - **Live App:** [https://collabora.web.id/](https://collabora.web.id/)
 
 ---
+
+## 🗓️ Project Timeline
+
+This project was built as part of the Hacktiv8 Fullstack JavaScript bootcamp final project and completed in just **12 days**:
+
+- **23 – 28 May:** Brainstorming, Data Schema, Design
+- **29 May – 3 June:** Development Process
+- **4 June:** Final Deploy, Presentation Preparation
+- **5 June:** Project Presentation
 
 > For more details, see the codebase and documentation in each folder.
