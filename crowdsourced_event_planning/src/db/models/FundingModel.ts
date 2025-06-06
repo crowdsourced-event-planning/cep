@@ -1,6 +1,5 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
-import { createObjectId } from "../utils/validateObjectId";
 
 export interface IFunding {
   _id?: ObjectId;
@@ -12,27 +11,29 @@ export interface IFunding {
 }
 
 export class FundingModel {
+  private static readonly COLLECTION_NAME = "fundings";
+
   static async getFundingsByEventId(eventId: string): Promise<IFunding[]> {
     const db = await getDb();
-    const collection = db.collection<IFunding>("fundings");
+    const collection = db.collection<IFunding>(this.COLLECTION_NAME);
 
     return await collection.find({ eventId }).sort({ createdAt: -1 }).toArray();
   }
 
   static async getFundingsByUserId(userId: string): Promise<IFunding[]> {
     const db = await getDb();
-    const collection = db.collection<IFunding>("fundings");
+    const collection = db.collection<IFunding>(this.COLLECTION_NAME);
 
     return await collection.find({ userId }).sort({ createdAt: -1 }).toArray();
   }
 
   static async createFunding(data: Partial<IFunding>): Promise<IFunding> {
     const db = await getDb();
-    const collection = db.collection<IFunding>("fundings");
+    const collection = db.collection<IFunding>(this.COLLECTION_NAME);
 
     const now = new Date();
     const fundingData: IFunding = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       eventId: data.eventId!,
       userId: data.userId!,
       amount: data.amount!,
@@ -46,7 +47,7 @@ export class FundingModel {
 
   static async getTotalFundingByEventId(eventId: string): Promise<number> {
     const db = await getDb();
-    const collection = db.collection<IFunding>("fundings");
+    const collection = db.collection<IFunding>(this.COLLECTION_NAME);
 
     const result = await collection
       .aggregate([

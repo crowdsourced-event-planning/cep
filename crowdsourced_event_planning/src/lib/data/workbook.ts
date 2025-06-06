@@ -1,6 +1,6 @@
 import { WorkbookModel, IWorkbook } from "@/db/models/WorkbookModel";
 import { getDb } from "@/lib/mongodb";
-import { Task } from "@/types/task";
+import type { ITask } from "@/db/models/TaskModel";
 import { ObjectId } from "mongodb";
 
 export async function getWorkbooksByEventId(
@@ -30,35 +30,31 @@ export async function updateWorkbook(
 
 export async function deleteWorkbook(workbookId: string): Promise<boolean> {
   return await WorkbookModel.deleteWorkbook(workbookId);
-  // import { getDb } from "@/lib/mongodb";
-  // import { ObjectId } from "mongodb";
-  // import { Workbook } from "@/types/workbook";
-  // import { Task } from "@/types/task";
-
-  // export async function getWorkbookById(
-  //   workbookId: string
-  // ): Promise<Workbook | null> {
-  //   const db = await getDb();
-  //   try {
-  //     return await db
-  //       .collection<Workbook>("workbooks")
-  //       .findOne({ _id: new ObjectId(workbookId) });
-  //   } catch (error) {
-  //     console.error("Error fetching workbook:", error);
-  //     return null;
-  //   }
-  // }
 }
 
-export async function getTasksByWorkbook(workbookId: string): Promise<Task[]> {
+export async function getTasksByWorkbook(workbookId: string): Promise<ITask[]> {
   const db = await getDb();
   try {
     return await db
-      .collection<Task>("tasks")
+      .collection<ITask>("tasks")
       .find({ workbookId: new ObjectId(workbookId) })
       .toArray();
   } catch (error) {
     console.error("Error fetching tasks:", error);
     return [];
   }
+}
+
+export async function getWorkbookBySlug(
+  slug: string
+): Promise<IWorkbook | null> {
+  return await WorkbookModel.getWorkbookBySlug(slug);
+}
+
+export async function getWorkbookByEventAndSlug(eventId: string, slug: string) {
+  const db = await getDb();
+  return db.collection("workbooks").findOne({
+    eventId: new ObjectId(eventId),
+    slug,
+  });
 }

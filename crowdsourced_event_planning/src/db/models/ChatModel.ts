@@ -1,10 +1,5 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../config/mongodb";
-import {
-  validateObjectId,
-  toObjectId,
-  createObjectId,
-} from "../utils/validateObjectId";
 
 export interface IChat {
   _id?: ObjectId;
@@ -54,7 +49,7 @@ export class ChatModel {
     const db = await getDb();
     const now = new Date();
     const messageToInsert: IChat = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       eventId: data.eventId,
       workbookId: data.workbookId,
       taskId: data.taskId,
@@ -68,12 +63,10 @@ export class ChatModel {
   }
 
   static async deleteMessage(messageId: string): Promise<boolean> {
-    validateObjectId(messageId, "Message ID");
     const db = await getDb();
-
     const result = await db
       .collection<IChat>(this.COLLECTION_NAME)
-      .deleteOne({ _id: toObjectId(messageId) });
+      .deleteOne({ _id: new ObjectId(messageId) });
     return result.deletedCount > 0;
   }
 }

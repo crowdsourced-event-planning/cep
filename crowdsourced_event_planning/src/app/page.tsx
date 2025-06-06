@@ -1,6 +1,8 @@
 import { Metadata } from "next";
+import Image from "next/image";
 import { getAllEvents } from "@/lib/data/event";
 import EventCard from "@/components/EventCard";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Collabora - Crowdsourced Event Planning Platform",
@@ -35,26 +37,29 @@ async function getRandomEventImage() {
 export default async function HomePage() {
   const events = await getAllEvents();
   const heroImage = await getRandomEventImage();
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("x-user-id")?.value || "";
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-green-400 to-blue-500 text-white py-20">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
-          <div className="md:w-1/2 mb-10 md:mb-0">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+      <section className="bg-gradient-to-r from-green-400 to-blue-500 text-white py-16 md:py-20">
+        <div className="container mx-auto px-4 flex flex-col-reverse md:flex-row items-center justify-between gap-8">
+          {/* Left: Text */}
+          <div className="w-full md:w-1/2 text-center md:text-left">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6 leading-tight">
               Bring Creative Projects to Life
             </h1>
-            <p className="text-xl md:text-2xl mb-8">
+            <p className="text-lg sm:text-xl md:text-2xl mb-6 md:mb-8">
               Discover, support, and join innovative events and projects from
               creators around the world.
             </p>
-            <div className="space-x-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <a
-                href="/register"
+                href="/create"
                 className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                Get Started
+                Start a Project
               </a>
               <a
                 href="/events"
@@ -64,11 +69,15 @@ export default async function HomePage() {
               </a>
             </div>
           </div>
-          <div className="md:w-1/2 flex justify-center">
-            <img
+          {/* Right: Image */}
+          <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0">
+            <Image
               src={heroImage}
               alt="Event Crowd"
-              className="w-full max-w-md rounded-xl shadow-lg"
+              width={400}
+              height={300}
+              className="w-full max-w-xs sm:max-w-md rounded-xl shadow-lg object-cover"
+              priority
             />
           </div>
         </div>
@@ -99,12 +108,8 @@ export default async function HomePage() {
               {events.slice(0, 8).map((event) => (
                 <EventCard
                   key={event._id?.toString() || ""}
-                  event={{
-                    ...event,
-                    _id: event._id?.toString() || "",
-                    createdAt: event.createdAt || new Date(),
-                    updatedAt: event.updatedAt || new Date(),
-                  }}
+                  event={event}
+                  currentUserId={userId.toString()}
                   showJoinButton={true}
                 />
               ))}
@@ -164,7 +169,7 @@ export default async function HomePage() {
             Launch your idea and find your community on Collabora.
           </p>
           <a
-            href="/events/create"
+            href="/create"
             className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
           >
             Start a Project

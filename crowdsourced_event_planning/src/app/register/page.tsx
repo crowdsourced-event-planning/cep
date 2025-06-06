@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import doRegister from "./action";
-import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 
 export interface IInput {
   name: string;
@@ -20,7 +20,6 @@ export default function Register() {
   });
 
   const router = useRouter();
-
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -31,30 +30,15 @@ export default function Register() {
       const result = await doRegister(input);
 
       if (result && !result.success) {
-        Swal.fire({
-          icon: "error",
-          title: "Registration Failed!",
-          text: result.message,
-          confirmButtonColor: "#3b82f6",
-        });
+        toast.error(result.message || "Registration Failed!");
       } else if (result && result.success) {
-        await Swal.fire({
-          icon: "success",
-          title: "Registration Success!",
-          text: "Redirecting to login...",
-          showConfirmButton: false,
-        });
-
-        router.push("/login");
+        toast.success("Registration Success! Redirecting to login...");
+        setTimeout(() => {
+          router.push("/login");
+        }, 800);
       }
-    } catch (error) {
-      console.log(error);
-      Swal.fire({
-        icon: "error",
-        title: "Error!",
-        text: "Something went wrong. Please try again.",
-        confirmButtonColor: "#3b82f6",
-      });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

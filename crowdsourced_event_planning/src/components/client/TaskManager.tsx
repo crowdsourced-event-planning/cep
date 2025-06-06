@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Button from "@/components/ui/button";
-import { formatDateTime } from "@/lib/utils/formatDate";
+import Button from "@/components/ui/Button";
+import { formatDateTime } from "@/lib/utils/format";
 
 interface Task {
   _id: string;

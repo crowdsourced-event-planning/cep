@@ -1,52 +1,47 @@
 "use client";
 
-import React, { useState } from "react";
-// import Swal from 'sweetalert2'; // Unused import removed
-import { useRouter } from "next/navigation";
+import React, { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import doLogin from "./action";
-import Swal from "sweetalert2";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "react-hot-toast";
 
 export interface IInputLogin {
   email: string;
   password: string;
 }
 
-export default function Login() {
+function LoginForm() {
   const [input, setInput] = useState<IInputLogin>({
     email: "",
     password: "",
   });
-
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, refreshAuth } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    console.log("Form submitted with input:", input);
 
     try {
       const result = await doLogin(input);
 
       if (result && !result.success) {
-        Swal.fire({
-          icon: "error",
-          title: "Login Failed!",
-          text: result.message,
-          confirmButtonColor: "#3b82f6",
-        });
+        toast.error(result.message || "Login Failed!");
       } else if (result && result.success) {
-        await Swal.fire({
-          icon: "success",
-          title: "Login Success!",
-          text: "Redirecting to dashboard...",
-          showConfirmButton: false,
-        });
-
-        router.push("/");
+        login();
+        setTimeout(() => {
+          refreshAuth();
+        }, 100);
+        toast.success("Login Success! Redirecting...");
+        setTimeout(() => {
+          const callbackUrl = searchParams.get("callbackUrl");
+          router.push(callbackUrl || "/");
+        }, 800);
       }
-    } catch (err) {
-      console.log(err);
+    } catch {
+      toast.error("Terjadi kesalahan. Silakan coba lagi.");
     }
   };
 
@@ -99,9 +94,17 @@ export default function Login() {
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-cyan-400 hover:underline">
             Register here
-          </Link>
+          </Link>{" "}
         </p>
       </form>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

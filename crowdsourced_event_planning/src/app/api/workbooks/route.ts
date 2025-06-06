@@ -1,13 +1,10 @@
-import { getDb } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
-import { Workbook } from "@/types/workbook";
+import { getWorkbooksByEventId, createWorkbook } from "@/lib/data/workbook";
+import { getEventById } from "@/lib/data/event";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("eventId");
-
-  const db = await getDb();
 
   try {
     if (!eventId) {
@@ -17,15 +14,11 @@ export async function GET(request: Request) {
       );
     }
 
-    const workbooks = await db
-      .collection<Workbook>("workbooks")
-      .find({ eventId: new ObjectId(eventId) })
-      .toArray();
+    const workbooks = await getWorkbooksByEventId(eventId);
     return NextResponse.json(
       workbooks.map((workbook) => ({
         ...workbook,
-        _id: workbook._id.toString(),
-        eventId: workbook.eventId.toString(),
+        _id: workbook._id?.toString(),
       }))
     );
   } catch (error) {
@@ -56,30 +49,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const db = await getDb();
-  const event = await db
-    .collection("events")
-    .findOne({ _id: new ObjectId(eventId) });
-  if (!event || event.creator !== userId) {
-    return NextResponse.json(
-      { error: "Anda tidak berwenang untuk membuat workbook di event ini" },
-      { status: 403 }
-    );
-  }
-
-  const newWorkbook: Partial<Workbook> = {
-    name,
-    description: description || "",
-    eventId: new ObjectId(eventId),
-    createdAt: new Date(),
-  };
-
   try {
-    const result = await db
-      .collection<Workbook>("workbooks")
-      .insertOne(newWorkbook as Workbook);
+    // Check if event exists and if user is the creator
+    const event = await getEventById(eventId);
+    if (!event || event.creator?.toString() !== userId) {
+      return NextResponse.json(
+        { error: "Anda tidak berwenang untuk membuat workbook di event ini" },
+        { status: 403 }
+      );
+    }
+
+    // Create the workbook using the model
+    const newWorkbook = await createWorkbook({
+      name,
+      description: description || "",
+      eventId,
+    });
+
     return NextResponse.json(
-      { id: result.insertedId.toString() },
+      { id: newWorkbook._id?.toString() },
       { status: 201 }
     );
   } catch (error) {

@@ -1,59 +1,134 @@
 "use client";
 
 import { useState } from "react";
+import { getCurrentUser } from "@/lib/auth-client";
 
-export default function TaskForm({ workbookId }: { workbookId: string }) {
+interface TaskFormProps {
+  workbookId: string;
+  refreshTasks?: () => void;
+  isCreator?: boolean;
+  isApprovedPanitia?: boolean;
+  userId?: string;
+}
+
+// Extend Window interface to include our refreshTasks function
+declare global {
+  interface Window {
+    refreshTasks?: () => void;
+  }
+}
+
+export default function TaskForm({
+  workbookId,
+  refreshTasks,
+  isCreator,
+  userId,
+}: TaskFormProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const addTask = async () => {
-    const userId = "6838676f883ee5cb0dac53eb";
+    if (!name.trim()) {
+      setError("Nama task tidak boleh kosong");
+      return;
+    }
 
-    const response = await fetch("/api/tasks", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-user-id": userId,
-      },
-      body: JSON.stringify({
+    try {
+      setIsSubmitting(true);
+      setError("");
+
+      const user = getCurrentUser();
+      if (!user || !user._id) {
+        setError("User tidak ditemukan atau belum login.");
+        setIsSubmitting(false);
+        return;
+      }
+      const currentUserId = user._id;
+
+      const payload = {
         workbookId,
         name,
         description,
         status: "pending",
-        assignedTo: userId,
-        dueDate: new Date().toISOString(),
-        customColumn: [],
-      }),
-    });
+        assignedTo: isCreator ? [currentUserId] : [userId],
+      };
 
-    if (response.ok) {
-      setName("");
-      setDescription("");
-      alert("Task berhasil ditambahkan! Refresh halaman untuk melihat.");
-    } else {
-      const errorData = await response.json();
-      alert(`Gagal menambah task: ${errorData.error}`);
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": currentUserId, // <-- wajib!
+        },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) {
+        setName("");
+        setDescription("");
+
+        // Call the global refresh function to update the task list immediately
+        if (window.refreshTasks) {
+          window.refreshTasks();
+        }
+
+        // Also call the callback if provided
+        if (refreshTasks) {
+          refreshTasks();
+        }
+      } else {
+        const errorData = await response.json();
+        console.error("Error adding task:", errorData);
+        setError(`Gagal menambah task: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error("Error in task creation:", error);
+      setError("Terjadi kesalahan saat menambahkan task.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name.trim()) {
+      setError("Nama task tidak boleh kosong");
+      return;
+    }
+
+    setError("");
+
+    addTask();
+  };
+
   return (
-    <div className="flex flex-col gap-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
       <input
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="border p-2"
+        className={`border p-2 ${
+          error && !name.trim() ? "border-red-500" : ""
+        }`}
         placeholder="Nama Task"
+        disabled={isSubmitting}
       />
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         className="border p-2"
         placeholder="Deskripsi Task"
+        disabled={isSubmitting}
       />
-      <button onClick={addTask} className="bg-blue-500 text-white p-2 rounded">
-        Tambah Task
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <button
+        type="submit"
+        className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors disabled:bg-blue-300 cursor-pointer"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Menambahkan..." : "Tambah Task"}
       </button>
-    </div>
+    </form>
   );
 }

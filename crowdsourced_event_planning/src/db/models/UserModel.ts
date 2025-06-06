@@ -4,18 +4,13 @@ import CustomError from "@/db/exceptions/CustomError";
 import { signToken } from "@/lib/jwt";
 import { z } from "zod";
 import { getDb } from "../config/mongodb";
-import {
-  validateObjectId,
-  toObjectId,
-  createObjectId,
-} from "../utils/validateObjectId";
 
 export interface IUser {
   _id?: ObjectId;
   name: string;
   email: string;
   password: string;
-  role?: string;
+  role: "creator" | "viewer";
   badge?: string;
   balance?: number;
   totalRating?: number;
@@ -41,20 +36,14 @@ interface ILoginInput {
   email: string;
   password: string;
 }
-
-interface ILoginResponse {
-  access_token: string;
-}
-
 export default class UserModel {
   private static readonly COLLECTION_NAME = "users";
 
   static async getById(id: string): Promise<IUser | null> {
-    validateObjectId(id, "User ID");
     const db = await getDb();
     const user = await db
       .collection<IUser>(this.COLLECTION_NAME)
-      .findOne({ _id: toObjectId(id) });
+      .findOne({ _id: new ObjectId(id) });
     return user;
   }
 
@@ -65,15 +54,16 @@ export default class UserModel {
       .findOne({ email });
     return user;
   }
+
   static async create(userData: Partial<IUser>): Promise<IUser> {
     const db = await getDb();
     const now = new Date();
     const userToInsert: IUser = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       name: userData.name!,
       email: userData.email!,
       password: userData.password!,
-      role: userData.role || "user",
+      role: userData.role || "viewer", // Ubah dari "user" ke "viewer"
       badge: userData.badge || "",
       balance: userData.balance || 0,
       totalRating: userData.totalRating || 0,
@@ -97,11 +87,11 @@ export default class UserModel {
     if (isExist) throw new CustomError("Email already registered", 400);
     const now = new Date();
     const user: IUser = {
-      _id: createObjectId(),
+      _id: new ObjectId(),
       name: payload.name,
       email: payload.email,
       password: await hashPassword(payload.password),
-      role: "user",
+      role: "viewer", // Ubah dari "user" ke "viewer"
       badge: "",
       balance: 0,
       totalRating: 0,
@@ -116,28 +106,58 @@ export default class UserModel {
     return "Registration successful";
   }
 
-  static async login(payload: ILoginInput): Promise<ILoginResponse> {
+  static async login(
+    payload: ILoginInput
+  ): Promise<{ user: IUser; access_token: string }> {
+    // Validasi input menggunakan Zod
     loginSchema.parse(payload);
     const db = await getDb();
 
+    // Cari user berdasarkan email
     const user = await db
       .collection<IUser>(this.COLLECTION_NAME)
       .findOne({ email: payload.email });
     if (!user) throw new CustomError("Invalid email/password", 401);
 
+    // Validasi password
     const isValid = await comparePassword(payload.password, user.password);
     if (!isValid) throw new CustomError("Invalid email/password", 401);
 
+    // Buat token JWT dengan tambahan role
     const token = await signToken({
       _id: user._id!.toString(),
+      name: user.name, // Pastikan `name` disertakan
+      email: user.email,
+      role: user.role,
+    });
+    console.log("JWT Payload:", {
+      _id: user._id,
       name: user.name,
+      role: user.role,
     });
 
-    return { access_token: token };
+    // Kembalikan user dan token
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        role: user.role,
+        badge: user.badge,
+        balance: user.balance,
+        totalRating: user.totalRating,
+        totalUserRating: user.totalUserRating,
+        createdEvents: user.createdEvents,
+        joinedEvents: user.joinedEvents,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      access_token: token,
+    };
   }
 
   static async update(id: string, data: Partial<IUser>): Promise<IUser | null> {
-    validateObjectId(id, "User ID");
     const db = await getDb();
 
     const updateData = {
@@ -148,7 +168,7 @@ export default class UserModel {
     const result = await db
       .collection<IUser>(this.COLLECTION_NAME)
       .findOneAndUpdate(
-        { _id: toObjectId(id) },
+        { _id: new ObjectId(id) },
         { $set: updateData },
         { returnDocument: "after" }
       );
@@ -157,12 +177,11 @@ export default class UserModel {
   }
 
   static async delete(id: string): Promise<string> {
-    validateObjectId(id, "User ID");
     const db = await getDb();
 
     await db
       .collection<IUser>(this.COLLECTION_NAME)
-      .deleteOne({ _id: toObjectId(id) });
+      .deleteOne({ _id: new ObjectId(id) });
     return "User deleted";
   }
 
@@ -175,4 +194,52 @@ export default class UserModel {
       .deleteMany(filter);
     return result.acknowledged;
   }
+
+  // Tambahkan method ini di class UserModel
+  static async updateRole(
+    userId: string,
+    newRole: "creator" | "viewer"
+  ): Promise<IUser | null> {
+    validateObjectId(userId, "User ID");
+    const db = await getDb();
+
+    const result = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: toObjectId(userId) },
+        {
+          $set: {
+            role: newRole,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: "after" }
+      );
+
+    return result || null;
+  }
+
+  // Tambahkan method ini di class UserModel
+  static async getUserRole(userId: string): Promise<string | null> {
+    validateObjectId(userId, "User ID");
+    const db = await getDb();
+
+    const user = await db
+      .collection<IUser>(this.COLLECTION_NAME)
+      .findOne({ _id: toObjectId(userId) }, { projection: { role: 1 } });
+
+    return user ? user.role : null;
+  }
+}
+function validateObjectId(id: string, fieldName: string) {
+  if (!id || typeof id !== "string" || !ObjectId.isValid(id)) {
+    throw new CustomError(`${fieldName} is not a valid ObjectId`, 400);
+  }
+}
+
+function toObjectId(id: string): ObjectId {
+  if (!ObjectId.isValid(id)) {
+    throw new CustomError("Invalid ObjectId", 400);
+  }
+  return new ObjectId(id);
 }

@@ -1,7 +1,9 @@
+"use client";
+
 import React from "react";
-import Card from "./ui/card";
-import { Task } from "../../types/task";
-import { formatDate } from "@/lib/utils/formatDate";
+import Card from "@/components/ui/Card";
+import type { ITask as Task } from "@/db/models/TaskModel";
+import { formatDate } from "@/lib/utils/format";
 
 interface TaskListProps {
   tasks: Task[];
@@ -34,41 +36,50 @@ export default function TaskList({ tasks, onSelectTask }: TaskListProps) {
 
   return (
     <div className="space-y-4">
-      {tasks.map((task) => (
-        <Card
-          key={task._id}
-          className="hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-          onClick={() => onSelectTask?.(task._id)}
-        >
-          <div className="space-y-3">
-            <div className="flex justify-between items-start">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {task.name}
-              </h3>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                  task.status
-                )}`}
-              >
-                {task.status.replace("_", " ").toUpperCase()}
-              </span>
+      {tasks.map((task) => {
+        const taskId = task._id ? task._id.toString() : "";
+        return (
+          <Card
+            key={taskId}
+            className="hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+            onClick={() => onSelectTask?.(taskId)}
+          >
+            <div className="space-y-3">
+              <div className="flex justify-between items-start">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {task.name}
+                </h3>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                    task.status
+                  )}`}
+                >
+                  {task.status.replace("_", " ").toUpperCase()}
+                </span>
+              </div>
+
+              <p className="text-gray-600 text-sm">{task.description}</p>
+
+              <div className="flex justify-between items-center text-xs text-gray-500 cursor-pointer">
+                <span>
+                  Assigned to:{" "}
+                  {Array.isArray(task.assignedTo) ? task.assignedTo.length : 0}{" "}
+                  users
+                </span>
+                <span>
+                  Created: {task.createdAt ? formatDate(task.createdAt) : "-"}
+                </span>
+              </div>
+
+              {task.dueDate && (
+                <p className="text-xs text-red-600">
+                  Due: {formatDate(task.dueDate)}
+                </p>
+              )}
             </div>
-
-            <p className="text-gray-600 text-sm">{task.description}</p>
-
-            <div className="flex justify-between items-center text-xs text-gray-500">
-              <span>Assigned to: {task.assignedTo.length} users</span>
-              <span>Created: {formatDate(task.createdAt)}</span>
-            </div>
-
-            {task.dueDate && (
-              <p className="text-xs text-red-600">
-                Due: {formatDate(task.dueDate)}
-              </p>
-            )}
-          </div>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 }

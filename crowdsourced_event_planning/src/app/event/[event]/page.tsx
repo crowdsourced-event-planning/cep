@@ -1,19 +1,30 @@
 import { Metadata } from "next";
-import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getEventById } from "@/lib/data/event";
+import { getEventBySlugOrId } from "@/lib/data/event";
 import { getWorkbooksByEventId } from "@/lib/data/workbook";
-import {
-  getRatingsByEventId,
-  getAverageRatingByEventId,
-} from "@/lib/data/rating";
-import WorkbookList from "@/components/WorkbookList";
-import Card from "@/components/ui/card";
-import Button from "@/components/ui/button";
-import { formatDateTime, formatCurrency } from "@/lib/utils/formatDate";
-import JoinEventButtonWrapper from "@/components/client/JoinEventButtonWrapper";
+import Card from "@/components/ui/Card";
+import { formatDateTime, formatCurrency } from "@/lib/utils/format";
 import FundingTracker from "@/components/client/FundingTracker";
+import CreateWorkbookButton from "@/components/client/CreateWorkbookButton";
+import WorkbookListClient from "@/components/client/WorkbookListClient";
+import { cookies } from "next/headers";
+import {
+  isPanitiaApproved,
+  getPanitiaRequestByUserAndEvent,
+} from "@/lib/data/panitiaRequest";
+import { UserEventModel } from "@/db/models/UserEventModel";
+import ShareEventButton from "@/components/client/ShareEventButton";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import EventGalleryWithModal from "@/components/client/EventGalleryWithModal";
+import EventActions from "@/components/client/EventActions";
+import DonateNotification from "@/components/client/DonateNotification";
+import DonationButtonWithModal from "@/components/client/DonationButtonWithModal";
+import EventDescription from "@/components/client/EventDescription";
+
+import EventChatActionsClient from "@/components/client/EventChatActionsClient";
+import RequestPanitiaButton from "@/components/client/RequestPanitiaButton";
+import Link from "next/link";
+import { getUserById } from "@/lib/data/user"; // contoh fungsi
 
 interface EventPageProps {
   params: Promise<{
@@ -25,7 +36,7 @@ export async function generateMetadata({
   params,
 }: EventPageProps): Promise<Metadata> {
   const { event: eventParam } = await params;
-  const event = await getEventById(eventParam);
+  const event = await getEventBySlugOrId(eventParam);
 
   if (!event) {
     return {
@@ -48,232 +59,298 @@ export async function generateMetadata({
 
 export default async function EventDetailPage({ params }: EventPageProps) {
   const { event: eventParam } = await params;
-
   try {
-    const [event, workbooks, ratings, averageRating] = await Promise.all([
-      getEventById(eventParam),
-      getWorkbooksByEventId(eventParam),
-      getRatingsByEventId(eventParam),
-      getAverageRatingByEventId(eventParam),
-    ]);
+    const event = await getEventBySlugOrId(eventParam);
     if (!event) {
       notFound();
     }
 
+    const userId = (await cookies()).get("x-user-id")?.value || "";
+    let user = null;
+    if (userId) {
+      user = await getUserById(userId); // pastikan fungsi ini mengembalikan user dengan name
+    }
+    const eventId = event._id?.toString() || "";
+
+    // Fetch workbooks for the event
+    const workbooks = await getWorkbooksByEventId(eventId);
+
+    // Cek apakah user panitia approved
+    const isPanitia = userId ? await isPanitiaApproved(eventId, userId) : false;
+    // Cek apakah user sudah join event (member)
+    // const isCreator = event.creator?.toString() === userId;
+    // const cekRole = await UserEventModel.getUserRoleInEvent(userId, eventId);
+    // const isAdmin = cekRole === "admin";
+    const isJoined = userId
+      ? await UserEventModel.isUserJoinedEvent(userId, eventId)
+      : false;
+    // Cek apakah user adalah creator
+    const isCreator = event.creator?.toString() === userId;
+
+    // Cek apakah sudah ada request panitia sebelumnya
+    const existingRequest = userId
+      ? await getPanitiaRequestByUserAndEvent(eventId, userId)
+      : null;
+
+    // Define the type for budget items
+    type BudgetItem = {
+      name?: string;
+      amount?: number;
+    };
+
     return (
       <div className="min-h-screen bg-gray-50 py-8">
+        <DonateNotification eventId={eventId} />
         <div className="container mx-auto px-4">
-          {/* Event Header */}
-          <div className="mb-8">
-            {" "}
-            <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
-              <Link href="/" className="hover:text-blue-600">
-                Home
-              </Link>
-              <span>/</span>
-              <span>Events</span>
-              <span>/</span>
-              <span className="text-gray-900">{event.title}</span>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main Content */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Event Image Gallery */}
-                {event.gallery && event.gallery.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {event.gallery.slice(0, 4).map((image, index) => (
-                      <Image
-                        key={index}
-                        src={image}
-                        alt={`${event.title} - Image ${index + 1}`}
-                        width={400}
-                        height={200}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                    ))}
-                  </div>
-                )}
-                {/* Event Details */}
+          {/* Breadcrumbs */}
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Events", href: "/events" },
+              { label: event.title },
+            ]}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6 cursor-pointer">
+              {/* Event Gallery & Documents */}
+              {(event.gallery?.length > 0 || event.documents?.length > 0) && (
                 <Card>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h1 className="text-3xl font-bold text-gray-900">
-                        {event.title}
-                      </h1>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          event.status === "open"
-                            ? "bg-green-100 text-green-800"
-                            : event.status === "closed"
-                            ? "bg-red-100 text-red-800"
-                            : event.status === "draft"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {event.status.toUpperCase()}
-                      </span>
-                    </div>
+                  <div className="p-4 cursor-pointer">
+                    <EventGalleryWithModal
+                      images={event.gallery}
+                      documents={event.documents}
+                    />
+                  </div>
+                </Card>
+              )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                      <div>
-                        <strong>Location:</strong> {event.location}
-                      </div>
-                      <div>
-                        <strong>Type:</strong> {event.typeEvent}
-                      </div>
-                      <div>
-                        <strong>Start:</strong>{" "}
-                        {formatDateTime(event.startDate)} - {event.startTime}
-                      </div>
-                      <div>
-                        <strong>End:</strong> {formatDateTime(event.endDate)} -{" "}
-                        {event.endTime}
-                      </div>
-                    </div>
+              {/* Event Details */}
+              <Card>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h1 className="text-3xl font-bold text-gray-900">
+                      {event.title}
+                    </h1>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        event.status === "open"
+                          ? "bg-green-100 text-green-800"
+                          : event.status === "closed"
+                          ? "bg-red-100 text-red-800"
+                          : event.status === "draft"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {event.status.toUpperCase()}
+                    </span>
+                  </div>
 
+                  {/* Category Badge */}
+                  {event.category && (
+                    <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold mb-2">
+                      {event.category}
+                    </span>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">
-                        Description
-                      </h3>
-                      <p className="text-gray-700 whitespace-pre-wrap">
-                        {event.description}
-                      </p>
+                      <strong>Location:</strong> {event.location}
                     </div>
+                    <div>
+                      <strong>Type:</strong> {event.typeEvent}
+                    </div>
+                    <div>
+                      <strong>Start:</strong> {formatDateTime(event.startDate)}{" "}
+                      - {event.startTime}
+                    </div>
+                    <div>
+                      <strong>End:</strong> {formatDateTime(event.endDate)} -{" "}
+                      {event.endTime}
+                    </div>
+                  </div>
 
+                  {/* Ganti bagian deskripsi */}
+                  <EventDescription description={event.description} />
+
+                  <div>
                     {event.budget && event.budget.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold mb-2">
                           Budget Breakdown
                         </h3>
                         <div className="space-y-2">
-                          {event.budget.map(
-                            (
-                              item: { name?: string; amount?: number },
-                              index
-                            ) => (
-                              <div
-                                key={index}
-                                className="flex justify-between items-center bg-gray-50 p-3 rounded"
-                              >
-                                <span>
-                                  {item.name || `Budget Item ${index + 1}`}
-                                </span>
-                                <span className="font-medium">
-                                  {formatCurrency(item.amount || 0)}
-                                </span>
-                              </div>
-                            )
-                          )}
+                          {(event.budget as BudgetItem[]).map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex justify-between items-center bg-gray-50 p-3 rounded"
+                            >
+                              <span>
+                                {item.name || `Budget Item ${index + 1}`}
+                              </span>
+                              <span className="font-medium">
+                                {formatCurrency(item.amount || 0)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
                   </div>
-                </Card>{" "}
-                {/* Workbooks */}
+                </div>
+              </Card>
+
+              {/* Workbooks */}
+              {isCreator || isJoined ? (
                 <Card>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl font-bold text-gray-900">
                         Workbooks
                       </h2>
-                      <Button size="sm">Create Workbook</Button>
+                      {isCreator && (
+                        <>
+                          <CreateWorkbookButton
+                            eventId={event.slug}
+                            size="sm"
+                            className="cursor-pointer"
+                          >
+                            Create Workbook
+                          </CreateWorkbookButton>
+                        </>
+                      )}
                     </div>
-
                     {workbooks.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-gray-500">
                           No workbooks created yet.
                         </p>
-                        <Button className="mt-4">Create First Workbook</Button>
+                        {/* {isCreator && (
+                          <CreateWorkbookButton
+                            eventId={event.slug}
+                            size="sm"
+                            className="mt-4"
+                          >
+                            Create First Workbook
+                          </CreateWorkbookButton>
+                        )} */}
                       </div>
                     ) : (
-                      <WorkbookList
-                        workbooks={workbooks.map((workbook) => ({
-                          ...workbook,
-                          _id: workbook._id?.toString() || "",
-                          createdAt: workbook.createdAt || new Date(),
-                          updatedAt: workbook.updatedAt || new Date(),
+                      <WorkbookListClient
+                        eventSlug={event.slug}
+                        workbooks={workbooks.map((w) => ({
+                          ...w,
+                          _id: w._id.toString(),
+                          eventId: w.eventId.toString(),
+                          createdAt:
+                            w.createdAt instanceof Date
+                              ? w.createdAt.toISOString()
+                              : w.createdAt,
+                          updatedAt:
+                            w.updatedAt instanceof Date
+                              ? w.updatedAt.toISOString()
+                              : w.updatedAt,
                         }))}
-                        onSelectWorkbook={(workbookId) => {
-                          window.location.href = `/event/${eventParam}/workbook/${workbookId}`;
-                        }}
+                        isCreator={isCreator}
                       />
                     )}
                   </div>
                 </Card>
-              </div>{" "}
-              {/* Sidebar */}
-              <div className="space-y-6">
-                {/* Funding Progress */}{" "}
-                <FundingTracker
-                  eventId={eventParam}
-                  targetAmount={event.targetFunding}
-                />
-                {/* Event Actions */}
+              ) : (
+                // Jika bukan creator dan belum join, tampilkan info
                 <Card>
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold">Actions</h3>
-                    <JoinEventButtonWrapper
-                      eventId={eventParam}
-                      eventStatus={event.status}
-                      className="w-full"
+                  <div className="text-center py-8 text-gray-500">
+                    Join this event to view workbooks.
+                  </div>
+                </Card>
+              )}
+            </div>{" "}
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Funding Progress */}{" "}
+              <FundingTracker
+                eventId={eventId}
+                targetAmount={event.targetFunding}
+              />
+              {/* Event Actions */}
+              <Card>
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">Actions</h3>
+                  {event.status === "open" && (
+                    <DonationButtonWithModal
+                      eventSlug={event.slug}
+                      userId={userId}
                     />
+                  )}
 
-                    <Button variant="secondary" className="w-full">
-                      Share Event
-                    </Button>
+                  <EventActions
+                    isCreator={isCreator}
+                    event={{
+                      ...event,
+                      _id: event._id?.toString() || "",
+                      creator:
+                        event.creator?.toString?.() || event.creator || "",
+                    }}
+                    isJoined={isJoined}
+                  />
+                  <ShareEventButton
+                    url={`${process.env.NEXT_PUBLIC_BASE_URL}/event/${event.slug}`}
+                  />
+                </div>
+              </Card>
+              {/* Event Chat */}
+              <Card>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Event Discussion</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Join the event to participate in discussions!
+                  </p>
+                  <EventChatActionsClient
+                    currentUser={{
+                      _id: userId,
+                      name: user?.name || "", // <-- gunakan nama dari database
+                      email: user?.email || "",
+                      role: user?.role || "",
+                      balance: user?.balance || 0,
+                      iat: Math.floor(Date.now() / 1000),
+                      exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now
+                    }}
+                    eventId={eventId}
+                    isPanitia={isPanitia}
+                    isCreator={isCreator}
+                    isJoined={isJoined}
+                    eventSlug={event.slug}
+                  />
 
-                    <Button variant="secondary" className="w-full">
-                      Follow Updates
-                    </Button>
-                  </div>
-                </Card>
-                {/* Event Chat */}
-                <Card>
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Event Discussion</h3>
-                    <div className="text-sm text-gray-600 mb-4">
-                      Join the event to participate in discussions!
+                  {/* Kondisi tombol Request Committee */}
+                  {!userId ? (
+                    <div className="mt-4 text-center">
+                      <Link
+                        href={`/login?callbackUrl=/event/${event.slug}`}
+                        className="inline-block px-4 py-2 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition"
+                      >
+                        Login to Request Committee
+                      </Link>
                     </div>
-                  </div>
-                </Card>
-                {/* Ratings */}
-                <Card>
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Community Rating</h3>
-
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-yellow-500 mb-1">
-                        {averageRating.toFixed(1)}
+                  ) : (
+                    !isCreator && // Tambahkan pengecekan ini
+                    !isPanitia &&
+                    existingRequest?.status !== "approved" && (
+                      <div className="mt-4 text-center">
+                        <RequestPanitiaButton
+                          eventId={eventId}
+                          userId={userId}
+                          workbookId={""}
+                          requestStatus={existingRequest?.status}
+                          buttonLabel="Request Committee"
+                        />
                       </div>
-                      <div className="flex justify-center space-x-1 mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-5 h-5 ${
-                              star <= averageRating
-                                ? "text-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        {ratings.length} reviews
-                      </p>
-                    </div>
-
-                    <Button variant="secondary" className="w-full">
-                      Write Review
-                    </Button>
-                  </div>
-                </Card>
-              </div>
+                    )
+                  )}
+                </div>
+              </Card>
             </div>
           </div>
         </div>
@@ -283,156 +360,4 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     console.error("Error loading event:", error);
     notFound();
   }
-  // app/event/[event]/page.tsx
-  // import { getEventById, getWorkbooksByEvent } from "@/lib/data/event";
-  // import Link from "next/link";
-  // import { Button } from "@/components/ui/button";
-  // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-  // import { Badge } from "@/components/ui/badge";
-  // import { Calendar, Clock, MapPin, DollarSign, List } from "lucide-react";
-  // import { Event } from "@/types/event";
-  // import { Workbook } from "@/types/workbook";
-
-  // const formatRupiah = (number: number): string => {
-  //   return new Intl.NumberFormat("id-ID", {
-  //     style: "currency",
-  //     currency: "IDR",
-  //     minimumFractionDigits: 0,
-  //   }).format(number);
-  // };
-
-  // interface EventPageProps {
-  //   params: Promise<{ event: string }>;
-  // }
-
-  // export default async function EventDetail({ params }: EventPageProps) {
-  //   const { event: eventId } = await params;
-
-  //   if (!eventId) {
-  //     return (
-  //       <div className="container mx-auto p-4">
-  //         <p className="text-red-500">ID event tidak ditemukan</p>
-  //       </div>
-  //     );
-  //   }
-
-  //   let event: Event | null = null;
-  //   let workbooks: Workbook[] = [];
-  //   try {
-  //     event = await getEventById(eventId);
-  //     if (!event) {
-  //       return (
-  //         <div className="container mx-auto p-4">
-  //           <p className="text-red-500">Event tidak ditemukan</p>
-  //         </div>
-  //       );
-  //     }
-  //     workbooks = await getWorkbooksByEvent(eventId);
-  //   } catch (error) {
-  //     console.error("🚀 ~ EventDetail ~ error:", error);
-  //     return (
-  //       <div className="container mx-auto p-4">
-  //         <p className="text-red-500">Gagal memuat data event</p>
-  //       </div>
-  //     );
-  //   }
-
-  //   return (
-  //     <div className="container mx-auto p-4 space-y-6">
-  //       <Card className="shadow-lg">
-  //         <CardHeader>
-  //           <div className="flex justify-between items-center">
-  //             <CardTitle className="text-3xl font-bold">{event.title}</CardTitle>
-  //             <Badge
-  //               variant={event.status === "active" ? "default" : "secondary"}
-  //             >
-  //               {event.status}
-  //             </Badge>
-  //           </div>
-  //         </CardHeader>
-  //         <CardContent className="space-y-4">
-  //           <p className="text-muted-foreground">{event.description}</p>
-
-  //           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  //             <div className="flex items-center gap-2">
-  //               <MapPin className="h-5 w-5 text-muted-foreground" />
-  //               <span>{event.location}</span>
-  //             </div>
-
-  //             <div className="flex items-center gap-2">
-  //               <Calendar className="h-5 w-5 text-muted-foreground" />
-  //               <span>
-  //                 {new Date(event.startDate).toLocaleDateString()} -{" "}
-  //                 {new Date(event.endDate).toLocaleDateString()}
-  //               </span>
-  //             </div>
-
-  //             <div className="flex items-center gap-2">
-  //               <Clock className="h-5 w-5 text-muted-foreground" />
-  //               <span>
-  //                 {event.startTime} - {event.endTime}
-  //               </span>
-  //             </div>
-
-  //             <div className="flex items-center gap-2">
-  //               <List className="h-5 w-5 text-muted-foreground" />
-  //               <span>Tipe: {event.typeEvent}</span>
-  //             </div>
-
-  //             <div className="flex items-center gap-2">
-  //               <DollarSign className="h-5 w-5 text-muted-foreground" />
-  //               <span>Dana Target: {formatRupiah(event.targetFunding)}</span>
-  //             </div>
-
-  //             <div className="flex items-center gap-2">
-  //               <DollarSign className="h-5 w-5 text-muted-foreground" />
-  //               <span>Dana Terkumpul: {formatRupiah(event.currentFunding)}</span>
-  //             </div>
-  //           </div>
-  //         </CardContent>
-  //       </Card>
-
-  //       <Card className="shadow-lg">
-  //         <CardHeader>
-  //           <CardTitle className="text-2xl">Workbooks</CardTitle>
-  //         </CardHeader>
-  //         <CardContent>
-  //           {workbooks.length > 0 ? (
-  //             <ul className="space-y-2">
-  //               {workbooks.map((workbook) => (
-  //                 <li
-  //                   key={workbook._id.toString()}
-  //                   className="flex items-center gap-2"
-  //                 >
-  //                   <Link
-  //                     href={`/event/${event._id}/workbook/${workbook._id}`}
-  //                     className="text-primary hover:underline"
-  //                   >
-  //                     {workbook.name}
-  //                   </Link>
-  //                 </li>
-  //               ))}
-  //             </ul>
-  //           ) : (
-  //             <p className="text-muted-foreground">
-  //               Tidak ada workbook untuk event ini.
-  //             </p>
-  //           )}
-  //         </CardContent>
-  //       </Card>
-
-  //       <div className="flex justify-end gap-4">
-  //         <Button asChild>
-  //           <Link href={`/event/${event._id}/donation?slug=${event._id}`}>
-  //             Donasi
-  //           </Link>
-  //         </Button>
-  //         <Button asChild>
-  //           <Link href={`/event/${event._id}/workbook/new`}>
-  //             Tambah Workbook Baru
-  //           </Link>
-  //         </Button>
-  //       </div>
-  //     </div>
-  //   );
 }
